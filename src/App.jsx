@@ -3662,8 +3662,27 @@ const CardsTab = ({ userCards, setUserCards, flips, setFlips, merchantSpending, 
               }}>
                 <CardVisual card={c} />
               </button>
+              {c.rewards && c.rewards.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10, padding: "0 2px" }}>
+                  {c.rewards.map((r, i) => {
+                    const accent = c.brandStyle?.accent || "var(--accent)";
+                    return (
+                      <div key={i} style={{
+                        padding: "5px 10px", borderRadius: 20,
+                        backgroundColor: accent + "18",
+                        border: `1px solid ${accent}30`,
+                        fontSize: 12, fontWeight: 600,
+                        color: accent,
+                        letterSpacing: "-0.01em",
+                      }}>
+                        {r.rate}% {r.category}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <div style={{
-                display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "0 4px",
+                display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "0 4px",
               }}>
                 <div style={{ flex: 1, fontSize: 10.5, color: "var(--text-3)" }}>
                   {flipsByCard[c.id] ? `${flipsByCard[c.id]} flip${flipsByCard[c.id] !== 1 ? "s" : ""}` : "No flips yet"}
@@ -4052,19 +4071,68 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
   const [selectedCardId, setSelectedCardId] = useState(userCards[0]?.id || "");
   const [method, setMethod] = useState(null); // null | 'pdf' | 'camera'
   const [parsing, setParsing] = useState(false);
+  const [parsedResult, setParsedResult] = useState(null); // { flipsCount, unassignedCount } after parse
 
   const startUpload = (kind) => {
     if (!selectedCardId) return;
     setMethod(kind);
     setParsing(true);
-    // Simulate parsing animation
-    setTimeout(() => onUpload(selectedCardId), 1400);
+    const flipsCount = 3 + Math.floor(Math.random() * 2);
+    setTimeout(() => {
+      setParsing(false);
+      setParsedResult({ flipsCount, unassignedCount: 1 });
+    }, 1400);
   };
 
   return (
     <BottomSheet onClose={onClose} title="Upload statement" maxHeight="85vh">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
-        {!parsing ? (
+        {parsedResult ? (
+          <div style={{ padding: "28px 14px 20px", textAlign: "center" }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 999,
+              background: "var(--accent-soft)", border: "1px solid var(--accent)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px",
+            }}>
+              <Check size={22} color="var(--accent)" strokeWidth={2.5} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.015em", marginBottom: 6 }}>
+              Statement parsed
+            </div>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 22, lineHeight: 1.5 }}>
+              {parsedResult.flipsCount} transactions matched · {parsedResult.unassignedCount} needs review
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 280, margin: "0 auto" }}>
+              <div style={{
+                padding: "10px 14px", borderRadius: 10,
+                background: "var(--bg-1)", border: "1px solid var(--border)",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                fontSize: 12.5, color: "var(--text-1)",
+              }}>
+                <span>Auto-matched to flips</span>
+                <span style={{ fontWeight: 700, color: "var(--green)" }}>{parsedResult.flipsCount}</span>
+              </div>
+              <div style={{
+                padding: "10px 14px", borderRadius: 10,
+                background: "var(--bg-1)", border: "1px solid var(--border)",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                fontSize: 12.5, color: "var(--text-1)",
+              }}>
+                <span>Needs manual assignment</span>
+                <span style={{ fontWeight: 700, color: "var(--gold)" }}>{parsedResult.unassignedCount}</span>
+              </div>
+            </div>
+            <button onClick={() => onUpload(selectedCardId)} style={{
+              marginTop: 22, width: "100%", padding: "13px",
+              background: "var(--accent)", color: "#fff",
+              border: "none", borderRadius: 12, fontSize: 14, fontWeight: 600,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}>
+              Review flips <ArrowRight size={15} />
+            </button>
+          </div>
+        ) : !parsing ? (
           <>
             {userCards.length === 0 ? (
               <div style={{ padding: "20px 14px", borderRadius: 12, background: "var(--bg-1)", border: "1px dashed var(--text-4)", textAlign: "center" }}>

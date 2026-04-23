@@ -75,12 +75,52 @@ export async function syncFlips(flips) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("flips").delete().eq("user_id", user.id);
+  const { data: dbRows, error: fetchErr } = await supabase
+    .from("flips").select("*").eq("user_id", user.id);
+  if (fetchErr) { console.error("syncFlips fetch:", fetchErr); return; }
 
-  if (flips.length > 0) {
-    const rows = flips.map((f) => ({ ...toDbFlip(f), user_id: user.id }));
+  const existing = dbRows ?? [];
+
+  // Safety: empty state with existing DB rows means a bug, not an intentional delete.
+  if (flips.length === 0 && existing.length > 0) {
+    console.warn("syncFlips: state is empty but DB has", existing.length, "rows — aborting to prevent accidental wipe");
+    return;
+  }
+
+  const dbIds = new Set(existing.map((r) => r.id));
+  const stateIds = new Set(flips.map((f) => f.id));
+
+  // INSERT rows that are in state but not in DB
+  const toInsert = flips.filter((f) => !dbIds.has(f.id));
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((f) => ({ ...toDbFlip(f), user_id: user.id }));
     const { error } = await supabase.from("flips").insert(rows);
     if (error) console.error("syncFlips insert:", error);
+  }
+
+  // DELETE rows that are in DB but not in state
+  const idsToDelete = existing.filter((r) => !stateIds.has(r.id)).map((r) => r.id);
+  if (idsToDelete.length > 0) {
+    const { error } = await supabase.from("flips").delete().in("id", idsToDelete).eq("user_id", user.id);
+    if (error) console.error("syncFlips delete:", error);
+  }
+
+  // UPDATE rows whose id matches but contents have changed
+  const dbById = Object.fromEntries(existing.map((r) => [r.id, r]));
+  for (const f of flips) {
+    if (!dbIds.has(f.id)) continue; // newly inserted above
+    const dbRow = dbById[f.id];
+    const stateRow = toDbFlip(f);
+    const dbCompare = {
+      id: dbRow.id, ticker: dbRow.ticker, merchant: dbRow.merchant,
+      category: dbRow.category, card_id: dbRow.card_id, confidence: dbRow.confidence,
+      flipped: dbRow.flipped, done: dbRow.done, statement_id: dbRow.statement_id,
+      purchases: dbRow.purchases, resolved_price: dbRow.resolved_price, resolved_name: dbRow.resolved_name,
+    };
+    if (JSON.stringify(stateRow) !== JSON.stringify(dbCompare)) {
+      const { error } = await supabase.from("flips").update(stateRow).eq("id", f.id).eq("user_id", user.id);
+      if (error) console.error("syncFlips update:", error);
+    }
   }
 }
 
@@ -96,12 +136,51 @@ export async function syncPortfolio(portfolio) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("portfolio_holdings").delete().eq("user_id", user.id);
+  const { data: dbRows, error: fetchErr } = await supabase
+    .from("portfolio_holdings").select("*").eq("user_id", user.id);
+  if (fetchErr) { console.error("syncPortfolio fetch:", fetchErr); return; }
 
-  if (portfolio.length > 0) {
-    const rows = portfolio.map((h) => ({ ...toDbHolding(h), user_id: user.id }));
+  const existing = dbRows ?? [];
+
+  // Safety: empty state with existing DB rows means a bug, not an intentional delete.
+  if (portfolio.length === 0 && existing.length > 0) {
+    console.warn("syncPortfolio: state is empty but DB has", existing.length, "rows — aborting to prevent accidental wipe");
+    return;
+  }
+
+  const dbTickers = new Set(existing.map((r) => r.ticker));
+  const stateTickers = new Set(portfolio.map((h) => h.ticker));
+
+  // INSERT
+  const toInsert = portfolio.filter((h) => !dbTickers.has(h.ticker));
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((h) => ({ ...toDbHolding(h), user_id: user.id }));
     const { error } = await supabase.from("portfolio_holdings").insert(rows);
     if (error) console.error("syncPortfolio insert:", error);
+  }
+
+  // DELETE
+  const tickersToDelete = existing.filter((r) => !stateTickers.has(r.ticker)).map((r) => r.ticker);
+  if (tickersToDelete.length > 0) {
+    const { error } = await supabase.from("portfolio_holdings").delete().in("ticker", tickersToDelete).eq("user_id", user.id);
+    if (error) console.error("syncPortfolio delete:", error);
+  }
+
+  // UPDATE rows whose ticker matches but contents have changed
+  const dbByTicker = Object.fromEntries(existing.map((r) => [r.ticker, r]));
+  for (const h of portfolio) {
+    if (!dbTickers.has(h.ticker)) continue;
+    const dbRow = dbByTicker[h.ticker];
+    const stateRow = toDbHolding(h);
+    const dbCompare = {
+      ticker: dbRow.ticker, shares: dbRow.shares, avg_price: dbRow.avg_price,
+      buys: dbRow.buys, current_price: dbRow.current_price,
+      day_change_pct: dbRow.day_change_pct, day_change_dollar: dbRow.day_change_dollar,
+    };
+    if (JSON.stringify(stateRow) !== JSON.stringify(dbCompare)) {
+      const { error } = await supabase.from("portfolio_holdings").update(stateRow).eq("ticker", h.ticker).eq("user_id", user.id);
+      if (error) console.error("syncPortfolio update:", error);
+    }
   }
 }
 
@@ -117,10 +196,25 @@ export async function syncUserCards(userCards) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("user_cards").delete().eq("user_id", user.id);
+  const { data: dbRows, error: fetchErr } = await supabase
+    .from("user_cards").select("*").eq("user_id", user.id);
+  if (fetchErr) { console.error("syncUserCards fetch:", fetchErr); return; }
 
-  if (userCards.length > 0) {
-    const rows = userCards.map((card) => ({
+  const existing = dbRows ?? [];
+
+  // Safety: empty state with existing DB rows means a bug, not an intentional delete.
+  if (userCards.length === 0 && existing.length > 0) {
+    console.warn("syncUserCards: state is empty but DB has", existing.length, "rows — aborting to prevent accidental wipe");
+    return;
+  }
+
+  const dbCardIds = new Set(existing.map((r) => r.card_id));
+  const stateCardIds = new Set(userCards.map((c) => c.id));
+
+  // INSERT
+  const toInsert = userCards.filter((c) => !dbCardIds.has(c.id));
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((card) => ({
       user_id: user.id,
       card_id: card.id,
       nickname: card.nickname ?? null,
@@ -128,6 +222,27 @@ export async function syncUserCards(userCards) {
     }));
     const { error } = await supabase.from("user_cards").insert(rows);
     if (error) console.error("syncUserCards insert:", error);
+  }
+
+  // DELETE
+  const cardIdsToDelete = existing.filter((r) => !stateCardIds.has(r.card_id)).map((r) => r.card_id);
+  if (cardIdsToDelete.length > 0) {
+    const { error } = await supabase.from("user_cards").delete().in("card_id", cardIdsToDelete).eq("user_id", user.id);
+    if (error) console.error("syncUserCards delete:", error);
+  }
+
+  // UPDATE rows whose card_id matches but card_data has changed
+  const dbByCardId = Object.fromEntries(existing.map((r) => [r.card_id, r]));
+  for (const card of userCards) {
+    if (!dbCardIds.has(card.id)) continue;
+    const dbRow = dbByCardId[card.id];
+    if (JSON.stringify(card) !== JSON.stringify(dbRow.card_data)) {
+      const { error } = await supabase.from("user_cards").update({
+        nickname: card.nickname ?? null,
+        card_data: card,
+      }).eq("card_id", card.id).eq("user_id", user.id);
+      if (error) console.error("syncUserCards update:", error);
+    }
   }
 }
 
