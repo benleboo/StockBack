@@ -229,7 +229,7 @@ const FontLoader = () => (
       0%, 100% { border-color: var(--text-4); box-shadow: none; }
       50%      { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     }
-    .selector-pulse { animation: selector-pulse 1.5s ease-in-out infinite; }
+    .selector-pulse { animation: selector-pulse 0.75s ease-in-out; }
 
     .soft-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .soft-scroll::-webkit-scrollbar-thumb { background: var(--text-4); border-radius: 999px; }
@@ -1210,7 +1210,9 @@ const _ORPHAN_CARD_DEFAULTS = {
   ],
 };
 function hydrateCard(card) {
-  if (_REDEMPTION_FIELDS.every((f) => f in card)) return card; // already up-to-date
+  const missing = _REDEMPTION_FIELDS.filter((f) => !(f in card));
+  if (missing.length === 0) return card; // already up-to-date — same reference, no copy
+  console.log('[hydrate]', card.id, '→ filling:', missing.join(', '));
   const entry = CARD_CATALOG.find((x) => x.id === card.id);
   const patch = entry
     ? { rewardCurrency: entry.rewardCurrency, cashRate: entry.cashRate, bestRate: entry.bestRate,
@@ -2683,6 +2685,14 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
   const selectedFlipAmt = active.filter((d) => d.flipped).reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
   const remaining = totalCashback - selectedFlipAmt;
   const selectedCount = active.filter((d) => d.flipped).length;
+  // Single interval drives all rows so they pulse in sync (one React batch = same frame).
+  // Each tick toggles pulseOn; CSS plays a single 0.75s animation per toggle-on.
+  const [pulseOn, setPulseOn] = useState(false);
+  useEffect(() => {
+    if (selectedCount !== 0) { setPulseOn(false); return; }
+    const id = setInterval(() => setPulseOn((v) => !v), 750);
+    return () => clearInterval(id);
+  }, [selectedCount]);
   const totalFlippedThisCycle = done.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
   const empty = active.length === 0 && unassigned.length === 0;
   const allSelected = active.length > 0 && selectedCount === active.length;
@@ -3249,7 +3259,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
             cashback={cashbackFor(d, cardsMap)}
             totalSpent={sumPurchases(d)}
             purchaseCount={d.purchases.length}
-            shouldPulse={selectedCount === 0}
+            shouldPulse={selectedCount === 0 && pulseOn}
             onToggle={() => toggleFlip(d.id)}
             onOpen={() => onOpenItem(d.id)}
             onDelete={() => deleteFlip(d.id)}
@@ -6362,14 +6372,21 @@ export default function Stockback() {
       setUserCards([]);
       loadUserData().then(({ flips: dbFlips, portfolio: dbPortfolio, userCards: dbCards }) => {
         const hydratedCards = dbCards.map(hydrateCard);
-        const cardSnapshotsDirty = hydratedCards.some((c, i) => c !== dbCards[i]);
+        // JSON comparison is more robust than reference equality in case any future
+        // path copies the object before reaching here.
+        const cardSnapshotsDirty = hydratedCards.some((c, i) => JSON.stringify(c) !== JSON.stringify(dbCards[i]));
         setFlips(dbFlips);
         setPortfolio(dbPortfolio);
         setUserCards(hydratedCards);
         firstSyncAfterLoad.current = { flips: true, portfolio: true, cards: true };
         dbLoaded.current = true;
         // Write back any card snapshots that gained new redemption fields during hydration.
-        if (cardSnapshotsDirty) syncUserCards(hydratedCards);
+        if (cardSnapshotsDirty) {
+          console.log('[hydrate] writing back', hydratedCards.filter((c, i) => JSON.stringify(c) !== JSON.stringify(dbCards[i])).length, 'updated card snapshot(s) to Supabase');
+          syncUserCards(hydratedCards);
+        } else {
+          console.log('[hydrate] all card snapshots up-to-date, no write needed');
+        }
         // Route based on freshly-loaded cards, not stale state.
         // Never interrupt an in-progress onboarding flow (bug 2).
         // Only reroute when coming from welcome or when forced onboarding (bug 1).
@@ -6561,6 +6578,7 @@ export default function Stockback() {
   const handleContinue = () => {
     setIsDemoMode(false);
     setFlips([]); setUnassigned([]); setPortfolio([]);
+    setUserCards([]); setSelectedCards([]);  // prevent demo/prior-session cards from leaking in
     setScreen("cards");
   };
   const handleDemoMode = () => {
