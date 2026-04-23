@@ -339,8 +339,8 @@ const CARD_CATALOG = [
 
 // ==================== MERCHANT → TICKER ====================
 const MERCHANT_LOOKUP = [
-  { match: /apple\.com|apple store|itunes|app store|apple pay/i, ticker: "AAPL", category: "Shopping", confidence: 0.98 },
-  { match: /amazon|amzn|whole foods/i, ticker: "AMZN", category: "Shopping", confidence: 0.98 },
+  { match: /apple\.com|apple store|itunes|app store|apple pay/i, ticker: "AAPL", category: "Online shopping", confidence: 0.98 },
+  { match: /amazon|amzn|whole foods/i, ticker: "AMZN", category: "Online shopping", confidence: 0.98 },
   { match: /google|youtube premium|google storage|google one/i, ticker: "GOOG", category: "Subscriptions", confidence: 0.95 },
   { match: /microsoft|xbox|msft/i, ticker: "MSFT", category: "Subscriptions", confidence: 0.95 },
   { match: /meta|facebook|instagram ads/i, ticker: "META", category: "Subscriptions", confidence: 0.9 },
@@ -349,51 +349,51 @@ const MERCHANT_LOOKUP = [
   { match: /disney\+|disney plus|hulu|espn\+/i, ticker: "DIS", category: "Streaming", confidence: 0.96 },
   { match: /paramount\+|paramount plus|cbs all/i, ticker: "PARA", category: "Streaming", confidence: 0.9 },
   { match: /warner|hbo max|max\.com|discovery\+/i, ticker: "WBD", category: "Streaming", confidence: 0.88 },
-  { match: /peloton/i, ticker: "PTON", category: "Subscriptions", confidence: 0.97 },
-  { match: /starbucks|sbux/i, ticker: "SBUX", category: "Dining", confidence: 0.99 },
-  { match: /chipotle|cmg/i, ticker: "CMG", category: "Dining", confidence: 0.99 },
-  { match: /mcdonald|mcd/i, ticker: "MCD", category: "Dining", confidence: 0.99 },
-  { match: /domino|dpz/i, ticker: "DPZ", category: "Dining", confidence: 0.97 },
-  { match: /dutch bros|bros\./i, ticker: "BROS", category: "Dining", confidence: 0.93 },
-  { match: /yum|taco bell|pizza hut|kfc/i, ticker: "YUM", category: "Dining", confidence: 0.9 },
-  { match: /cava/i, ticker: "CAVA", category: "Dining", confidence: 0.95 },
-  { match: /shake shack|shak/i, ticker: "SHAK", category: "Dining", confidence: 0.95 },
-  { match: /uber eats|ubereats/i, ticker: "UBER", category: "Dining", confidence: 0.98 },
-  { match: /uber(?!\s*eats)|uber trip/i, ticker: "UBER", category: "Travel", confidence: 0.97 },
-  { match: /lyft/i, ticker: "LYFT", category: "Travel", confidence: 0.97 },
-  { match: /doordash|dash\b/i, ticker: "DASH", category: "Dining", confidence: 0.85 },
-  { match: /grubhub/i, ticker: null, category: "Dining", confidence: 0.2 },
+  { match: /peloton/i, ticker: "PTON", category: "Fitness", confidence: 0.97 },
+  { match: /starbucks|sbux/i, ticker: "SBUX", category: "Dining / Restaurants", confidence: 0.99 },
+  { match: /chipotle|cmg/i, ticker: "CMG", category: "Dining / Restaurants", confidence: 0.99 },
+  { match: /mcdonald|mcd/i, ticker: "MCD", category: "Dining / Restaurants", confidence: 0.99 },
+  { match: /domino|dpz/i, ticker: "DPZ", category: "Dining / Restaurants", confidence: 0.97 },
+  { match: /dutch bros|bros\./i, ticker: "BROS", category: "Dining / Restaurants", confidence: 0.93 },
+  { match: /yum|taco bell|pizza hut|kfc/i, ticker: "YUM", category: "Dining / Restaurants", confidence: 0.9 },
+  { match: /cava/i, ticker: "CAVA", category: "Dining / Restaurants", confidence: 0.95 },
+  { match: /shake shack|shak/i, ticker: "SHAK", category: "Dining / Restaurants", confidence: 0.95 },
+  { match: /uber eats|ubereats/i, ticker: "UBER", category: "Dining / Restaurants", confidence: 0.98 },
+  { match: /uber(?!\s*eats)|uber trip/i, ticker: "UBER", category: "Transit (rideshare, subway, parking)", confidence: 0.97 },
+  { match: /lyft/i, ticker: "LYFT", category: "Transit (rideshare, subway, parking)", confidence: 0.97 },
+  { match: /doordash|dash\b/i, ticker: "DASH", category: "Dining / Restaurants", confidence: 0.85 },
+  { match: /grubhub/i, ticker: null, category: "Dining / Restaurants", confidence: 0.2 },
   { match: /instacart|cart\*/i, ticker: "CART", category: "Groceries", confidence: 0.85 },
-  { match: /target|tgt/i, ticker: "TGT", category: "Shopping", confidence: 0.98 },
-  { match: /costco/i, ticker: "COST", category: "Groceries", confidence: 0.99 },
+  { match: /target|tgt/i, ticker: "TGT", category: "Department stores", confidence: 0.98 },
+  { match: /costco/i, ticker: "COST", category: "Wholesale clubs (Costco, Sam's)", confidence: 0.99 },
   { match: /walmart|wm supercenter|wmt/i, ticker: "WMT", category: "Groceries", confidence: 0.96 },
-  { match: /nike/i, ticker: "NKE", category: "Shopping", confidence: 0.98 },
-  { match: /lululemon|lulu\b/i, ticker: "LULU", category: "Shopping", confidence: 0.97 },
-  { match: /best buy|bby/i, ticker: "BBY", category: "Shopping", confidence: 0.97 },
-  { match: /home depot|hd\b/i, ticker: "HD", category: "Shopping", confidence: 0.97 },
-  { match: /lowes|lowe's/i, ticker: "LOW", category: "Shopping", confidence: 0.97 },
-  { match: /tj maxx|tjmaxx|marshalls|home goods|homegoods/i, ticker: "TJX", category: "Shopping", confidence: 0.9 },
-  { match: /ross stores|ross dress/i, ticker: "ROST", category: "Shopping", confidence: 0.92 },
-  { match: /ulta\b/i, ticker: "ULTA", category: "Shopping", confidence: 0.95 },
-  { match: /sephora/i, ticker: null, category: "Shopping", confidence: 0.3 },
-  { match: /hilton|hlt\b/i, ticker: "HLT", category: "Hotels", confidence: 0.96 },
-  { match: /marriott|mar\b/i, ticker: "MAR", category: "Hotels", confidence: 0.96 },
-  { match: /hyatt/i, ticker: "H", category: "Hotels", confidence: 0.93 },
-  { match: /airbnb/i, ticker: "ABNB", category: "Hotels", confidence: 0.97 },
-  { match: /booking\.com/i, ticker: "BKNG", category: "Hotels", confidence: 0.95 },
-  { match: /expedia/i, ticker: "EXPE", category: "Travel", confidence: 0.95 },
-  { match: /delta\b|delta air/i, ticker: "DAL", category: "Travel", confidence: 0.97 },
-  { match: /united airlines|united air/i, ticker: "UAL", category: "Travel", confidence: 0.97 },
-  { match: /american air|aa\.com/i, ticker: "AAL", category: "Travel", confidence: 0.95 },
-  { match: /southwest|swa\b/i, ticker: "LUV", category: "Travel", confidence: 0.95 },
-  { match: /jetblue/i, ticker: "JBLU", category: "Travel", confidence: 0.96 },
-  { match: /alaska air/i, ticker: "ALK", category: "Travel", confidence: 0.95 },
+  { match: /nike/i, ticker: "NKE", category: "Online shopping", confidence: 0.98 },
+  { match: /lululemon|lulu\b/i, ticker: "LULU", category: "Online shopping", confidence: 0.97 },
+  { match: /best buy|bby/i, ticker: "BBY", category: "Department stores", confidence: 0.97 },
+  { match: /home depot|hd\b/i, ticker: "HD", category: "Department stores", confidence: 0.97 },
+  { match: /lowes|lowe's/i, ticker: "LOW", category: "Department stores", confidence: 0.97 },
+  { match: /tj maxx|tjmaxx|marshalls|home goods|homegoods/i, ticker: "TJX", category: "Department stores", confidence: 0.9 },
+  { match: /ross stores|ross dress/i, ticker: "ROST", category: "Department stores", confidence: 0.92 },
+  { match: /ulta\b/i, ticker: "ULTA", category: "Department stores", confidence: 0.95 },
+  { match: /sephora/i, ticker: null, category: "Department stores", confidence: 0.3 },
+  { match: /hilton|hlt\b/i, ticker: "HLT", category: "Travel (flights, hotels)", confidence: 0.96 },
+  { match: /marriott|mar\b/i, ticker: "MAR", category: "Travel (flights, hotels)", confidence: 0.96 },
+  { match: /hyatt/i, ticker: "H", category: "Travel (flights, hotels)", confidence: 0.93 },
+  { match: /airbnb/i, ticker: "ABNB", category: "Travel (flights, hotels)", confidence: 0.97 },
+  { match: /booking\.com/i, ticker: "BKNG", category: "Travel (flights, hotels)", confidence: 0.95 },
+  { match: /expedia/i, ticker: "EXPE", category: "Travel (flights, hotels)", confidence: 0.95 },
+  { match: /delta\b|delta air/i, ticker: "DAL", category: "Travel (flights, hotels)", confidence: 0.97 },
+  { match: /united airlines|united air/i, ticker: "UAL", category: "Travel (flights, hotels)", confidence: 0.97 },
+  { match: /american air|aa\.com/i, ticker: "AAL", category: "Travel (flights, hotels)", confidence: 0.95 },
+  { match: /southwest|swa\b/i, ticker: "LUV", category: "Travel (flights, hotels)", confidence: 0.95 },
+  { match: /jetblue/i, ticker: "JBLU", category: "Travel (flights, hotels)", confidence: 0.96 },
+  { match: /alaska air/i, ticker: "ALK", category: "Travel (flights, hotels)", confidence: 0.95 },
   { match: /chevron/i, ticker: "CVX", category: "Gas", confidence: 0.95 },
   { match: /exxon|mobil\b/i, ticker: "XOM", category: "Gas", confidence: 0.95 },
   { match: /shell oil|shell gas/i, ticker: "SHEL", category: "Gas", confidence: 0.9 },
-  { match: /paypal(?!.*donate)/i, ticker: "PYPL", category: "Shopping", confidence: 0.8 },
-  { match: /coinbase/i, ticker: "COIN", category: "Shopping", confidence: 0.9 },
-  { match: /robinhood/i, ticker: "HOOD", category: "Shopping", confidence: 0.9 },
+  { match: /paypal(?!.*donate)/i, ticker: "PYPL", category: "Online shopping", confidence: 0.8 },
+  { match: /coinbase/i, ticker: "COIN", category: "Online shopping", confidence: 0.9 },
+  { match: /robinhood/i, ticker: "HOOD", category: "Online shopping", confidence: 0.9 },
 ];
 
 const lookupMerchant = (desc) => {
@@ -3597,7 +3597,15 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
             <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
               Ticker: <b>{suggested.ticker}</b>{suggested.category ? ` (${suggested.category})` : suggested.name ? ` — ${suggested.name}` : ""}
             </div>
-            <button onClick={() => { justUsed.current = true; setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
+            <button onClick={() => {
+              justUsed.current = true;
+              setTicker(suggested.ticker);
+              // Auto-fill category from hardcoded lookup (Yahoo results have no category)
+              if (suggested.category) setCategory(suggested.category);
+              // Update merchant to canonical Yahoo shortname when user accepts a Yahoo suggestion
+              if (suggested.name && suggested.name !== merchant.trim()) setMerchant(suggested.name);
+              setSuggested(null);
+            }} style={{
               padding: "4px 8px", borderRadius: 7, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
             }}>Use</button>
@@ -4363,23 +4371,30 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
     setShowDeleteAll(false);
   };
 
-  // Simulated statement-parse: generates 3-4 new flips + 1 unassigned for the chosen card
+  // Simulated statement-parse: generates 3-4 new flips + 1 unassigned for the chosen card.
+  // Overwrites any existing statement for the same calendar month (no duplicates).
   const simulateUpload = (cardId) => {
     const flipsSnap = flips;
     const unassignedSnap = unassigned;
     const now = new Date();
     const yr = now.getFullYear();
     const mo = String(now.getMonth() + 1).padStart(2, "0");
+    const monthPrefix = `stmt-${yr}-${mo}-`;
+
+    // Check if this month already has a statement; if so, overwrite it.
+    const isDuplicate = flips.some((f) => f.statementId?.startsWith(monthPrefix)) ||
+                        unassigned.some((u) => u.statementId?.startsWith(monthPrefix));
+
     const stmtId = `stmt-${yr}-${mo}-${Date.now().toString(36)}`;
 
     // Sample simulated charges — randomly pick a handful of merchants
     const merchantPool = [
-      { merchant: "Amazon", ticker: "AMZN", category: "Shopping", desc: "AMAZON.COM", confidence: 0.98, amt: 42.80 + Math.random() * 60 },
-      { merchant: "Starbucks", ticker: "SBUX", category: "Dining", desc: "STARBUCKS #44812", confidence: 0.99, amt: 8.75 + Math.random() * 6 },
-      { merchant: "Uber", ticker: "UBER", category: "Travel", desc: "UBER TRIP", confidence: 0.97, amt: 18.50 + Math.random() * 25 },
-      { merchant: "Target", ticker: "TGT", category: "Shopping", desc: "TARGET #2204", confidence: 0.96, amt: 52.30 + Math.random() * 40 },
-      { merchant: "Chipotle", ticker: "CMG", category: "Dining", desc: "CHIPOTLE #1021", confidence: 0.99, amt: 14.80 + Math.random() * 6 },
-      { merchant: "Apple Store", ticker: "AAPL", category: "Shopping", desc: "APPLE.COM/BILL", confidence: 0.98, amt: 9.99 + Math.random() * 80 },
+      { merchant: "Amazon", ticker: "AMZN", category: "Online shopping", desc: "AMAZON.COM", confidence: 0.98, amt: 42.80 + Math.random() * 60 },
+      { merchant: "Starbucks", ticker: "SBUX", category: "Dining / Restaurants", desc: "STARBUCKS #44812", confidence: 0.99, amt: 8.75 + Math.random() * 6 },
+      { merchant: "Uber", ticker: "UBER", category: "Transit (rideshare, subway, parking)", desc: "UBER TRIP", confidence: 0.97, amt: 18.50 + Math.random() * 25 },
+      { merchant: "Target", ticker: "TGT", category: "Department stores", desc: "TARGET #2204", confidence: 0.96, amt: 52.30 + Math.random() * 40 },
+      { merchant: "Chipotle", ticker: "CMG", category: "Dining / Restaurants", desc: "CHIPOTLE #1021", confidence: 0.99, amt: 14.80 + Math.random() * 6 },
+      { merchant: "Apple Store", ticker: "AAPL", category: "Online shopping", desc: "APPLE.COM/BILL", confidence: 0.98, amt: 9.99 + Math.random() * 80 },
     ];
     const shuffled = [...merchantPool].sort(() => Math.random() - 0.5);
     const picked = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
@@ -4398,7 +4413,7 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
       id: `upload-un-${stmtId}`,
       merchant: "SQ *UNKNOWN VENDOR",
       rawDesc: "SQ *UNKNOWN VENDOR #77",
-      category: "Shopping",
+      category: "Online shopping",
       amount: +(22 + Math.random() * 30).toFixed(2),
       date: today,
       cardId,
@@ -4407,12 +4422,21 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
       suggestions: ["AMZN", "SHOP", "ETSY"],
     }];
 
-    setFlips((arr) => [...newFlips, ...arr]);
-    setUnassigned((arr) => [...newUnassigned, ...arr]);
+    if (isDuplicate) {
+      // Overwrite: strip old month's non-done items then add fresh parse
+      setFlips((arr) => [...newFlips, ...arr.filter((f) => f.done || !f.statementId?.startsWith(monthPrefix))]);
+      setUnassigned((arr) => [...newUnassigned, ...arr.filter((u) => !u.statementId?.startsWith(monthPrefix))]);
+    } else {
+      setFlips((arr) => [...newFlips, ...arr]);
+      setUnassigned((arr) => [...newUnassigned, ...arr]);
+    }
     setShowUpload(false);
 
+    const monthName = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     onShowToast({
-      label: `Parsed ${picked.length} charges + 1 unassigned`,
+      label: isDuplicate
+        ? `Re-processed ${monthName} — ${picked.length} charges replaced`
+        : `Parsed ${picked.length} charges + 1 unassigned`,
       onUndo: () => { setFlips(flipsSnap); setUnassigned(unassignedSnap); },
     });
   };
