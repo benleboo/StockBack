@@ -1156,13 +1156,6 @@ const BottomNav = ({ active, onChange, onOpenSettings, settingsActive }) => {
 // Google/Apple = simulated sign-in (demo pill). Continue without account = REAL empty app.
 // "Try in demo mode" = small text link below that seeds the full demo data.
 const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
-  const [colorIdx, setColorIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setColorIdx((i) => (i + 1) % SHUFFLE_COLORS.length), 1800);
-    return () => clearInterval(id);
-  }, []);
-  const currentColor = SHUFFLE_COLORS[colorIdx];
-
   return (
     <div className="fade-in" style={{
       flex: 1, display: "flex", flexDirection: "column",
@@ -1171,7 +1164,7 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
     }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
-          <StockbackLogo size={48} />
+          <StockbackLogo size={48} color="#ffffff" />
           <div className="sb-brand" style={{ fontSize: 22, color: "var(--text-1)" }}>Stockback</div>
         </div>
 
@@ -1180,7 +1173,7 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           color: "var(--text-1)", fontWeight: 500,
         }}>
           Make your cashback<br />make{" "}
-          <span className="color-shuffle" style={{ color: currentColor }}>cashback</span>.
+          <span className="color-shuffle" style={{ color: "var(--accent)" }}>cashback</span>.
         </h1>
 
         <p style={{
@@ -1874,6 +1867,12 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
 
   const tryCamera = async () => {
     try {
+      if (navigator.permissions) {
+        const status = await navigator.permissions.query({ name: "camera" });
+        if (status.state === "granted") return true;
+        if (status.state === "denied") return false;
+        // "prompt": fall through to getUserMedia to trigger the browser permission dialog
+      }
       if (navigator.mediaDevices?.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         stream.getTracks().forEach((t) => t.stop());
@@ -1894,6 +1893,8 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
   };
 
   // When user taps camera option without permission, ask for it
+  const [cameraDenied, setCameraDenied] = useState(false);
+
   const handleCameraClick = async () => {
     if (!permissions.camera) {
       const cam = await tryCamera();
@@ -1901,8 +1902,7 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
         setPermissions({ ...permissions, camera: true });
         onNext();
       } else {
-        // Proceed anyway — real permission can't work here, it's demo
-        onNext();
+        setCameraDenied(true);
       }
     } else {
       onNext();
@@ -1958,6 +1958,15 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
         <UploadOption icon={Camera} title="Take a photo"
           desc={permissions.camera ? "Camera ready" : "Tap to request camera"}
           onClick={handleCameraClick} demo />
+        {cameraDenied && (
+          <div style={{
+            padding: "10px 12px", borderRadius: 10,
+            background: "rgba(255,95,109,0.08)", border: "1px solid rgba(255,95,109,0.2)",
+            fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5,
+          }}>
+            <b style={{ color: "var(--red)" }}>Camera access denied.</b> Re-enable it in your browser's site settings, then try again.
+          </div>
+        )}
         {(!permissions.camera || !permissions.notifications) && (
           <button onClick={() => setStep("permissions")} style={{
             marginTop: 2, padding: "9px 12px", borderRadius: 10,
@@ -4041,12 +4050,29 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
 const SettingsTab = ({
   themeId, setThemeId, broker, setBroker, connectedBrokers, setConnectedBrokers,
   onDeleteAccount, onClearData, onExitDemo, isDemoMode, onClose, onShowToast, onSignOut,
+  supabaseUser, onSignIn, onDeleteSignedInAccount,
 }) => {
   const [view, setView] = useState("main");
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false);
-  // sub-views: main | theme | brokers | connect | data | help | delete | feedback
+  // sub-views: main | theme | brokers | connect | data | help | delete | feedback | account | permissions
 
   // Hooks MUST be at top level — never inside conditional branches
+  const [cameraStatus, setCameraStatus] = useState("unknown");
+  const [notifStatus, setNotifStatus] = useState("unknown");
+  useEffect(() => {
+    if (view !== "permissions") return;
+    const check = async () => {
+      if (!navigator.permissions) return;
+      try {
+        const cam = await navigator.permissions.query({ name: "camera" });
+        setCameraStatus(cam.state);
+        const notif = await navigator.permissions.query({ name: "notifications" });
+        setNotifStatus(notif.state);
+      } catch (_) {}
+    };
+    check();
+  }, [view]);
+
   const groupedThemes = useMemo(() => {
     const g = { Stockback: [], Brokerage: [] };
     Object.entries(THEMES).forEach(([id, t]) => {
@@ -4078,18 +4104,40 @@ const SettingsTab = ({
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
         <Header title="Settings" />
         <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "16px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Sign-in upgrade banner for guest / demo users */}
+          {!supabaseUser && (
+            <div style={{
+              padding: "16px", borderRadius: 14, marginBottom: 4,
+              background: "linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-1) 100%)",
+              border: "1px solid var(--border)",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", marginBottom: 3 }}>
+                Sign in to save your work
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 12, lineHeight: 1.4 }}>
+                Sync cards, flips, and portfolio across devices.
+              </div>
+              <button onClick={() => onSignIn?.("google")} style={{
+                width: "100%", padding: "11px",
+                background: "#ffffff", color: "#1a1a1a",
+                border: "1px solid var(--border-strong)", borderRadius: 10,
+                fontSize: 12.5, fontWeight: 500, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}><GoogleLogo /> Sign in with Google</button>
+            </div>
+          )}
           <SettingsRow icon={Palette} label="Theme" value={THEMES[themeId].label} onClick={() => setView("theme")} />
           <SettingsRow icon={Link2} label="Broker"
             value={BROKER_PRESETS.find((b) => b.id === broker)?.name || "Yahoo Finance"}
             onClick={() => setView("brokers")} />
           <SettingsRow icon={Database} label="Data" value={isDemoMode ? "Demo mode" : "Your data"} onClick={() => setView("data")} />
+          <SettingsRow icon={Shield} label="Permissions" onClick={() => setView("permissions")} />
           <SettingsRow icon={MessageSquare} label="Send feedback" onClick={() => setView("feedback")} />
           <SettingsRow icon={HelpCircle} label="Help & About" onClick={() => setView("help")} />
+          {supabaseUser && (
+            <SettingsRow icon={User} label="Account" value={supabaseUser.email} onClick={() => setView("account")} />
+          )}
           <SettingsRow icon={Trash2} label="Delete" danger onClick={() => setView("delete")} />
-          {onSignOut && (<>
-            <div style={{ fontSize: 10.5, color: "var(--text-4)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 14, marginBottom: 2, paddingLeft: 4 }}>Account</div>
-            <SettingsRow icon={LogOut} label="Sign out" onClick={onSignOut} />
-          </>)}
           <div style={{ fontSize: 10, color: "var(--text-4)", textAlign: "center", marginTop: 20, padding: "0 20px", lineHeight: 1.5 }}>
             <b style={{ color: "var(--text-3)" }}>Stockback</b> — design concept. No real accounts or trades. All flows are illustrative.
           </div>
@@ -4304,6 +4352,91 @@ const SettingsTab = ({
   // Help sub-view
   if (view === "help") {
     return <HelpScreen onBack={() => setView("main")} />;
+  }
+
+  // Account sub-view (signed-in users only)
+  if (view === "account") {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
+        <Header title="Account" />
+        <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--bg-1)", border: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 10, color: "var(--text-4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Signed in as</div>
+            <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 500 }}>{supabaseUser?.email}</div>
+          </div>
+          <button onClick={onSignOut} style={{
+            padding: "13px", borderRadius: 12, marginTop: 6,
+            background: "transparent", border: "1px solid var(--border-strong)",
+            color: "var(--text-1)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}><LogOut size={14} /> Sign out</button>
+          <button onClick={onDeleteSignedInAccount} style={{
+            padding: "13px", borderRadius: 12,
+            background: "transparent", border: "1px solid rgba(255, 95, 109, 0.4)",
+            color: "var(--red)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}><Trash2 size={14} /> Delete account</button>
+          <div style={{ fontSize: 11, color: "var(--text-4)", lineHeight: 1.5, textAlign: "center", marginTop: 4, padding: "0 10px" }}>
+            Deleting removes all your cards, flips, and portfolio data from Stockback servers.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Permissions sub-view
+  if (view === "permissions") {
+    const requestCamera = async () => {
+      if (!navigator.permissions) return;
+      try { const s = await navigator.permissions.query({ name: "camera" }); setCameraStatus(s.state); } catch (_) {}
+    };
+    const requestNotif = async () => {
+      try {
+        if ("Notification" in window) {
+          const result = await Notification.requestPermission();
+          setNotifStatus(result === "granted" ? "granted" : result === "denied" ? "denied" : "prompt");
+        }
+      } catch (_) {}
+    };
+    const StatusLabel = ({ status }) => (
+      <div style={{
+        fontSize: 11, fontWeight: status === "granted" || status === "denied" ? 500 : 400,
+        color: status === "granted" ? "var(--green)" : status === "denied" ? "var(--red)" : "var(--text-3)",
+      }}>
+        {status === "granted" ? "Allowed" : status === "denied" ? "Denied" : "Not requested"}
+      </div>
+    );
+    const PermRow = ({ icon: Icon, label, status, onRequest }) => (
+      <div style={{ padding: "16px", borderRadius: 14, background: "var(--bg-1)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon size={17} color="var(--accent-light)" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)", marginBottom: 2 }}>{label}</div>
+            <StatusLabel status={status} />
+          </div>
+        </div>
+        {status === "prompt" || status === "unknown" ? (
+          <button onClick={onRequest} style={{ padding: "10px", borderRadius: 10, background: "var(--accent-soft)", border: "1px solid var(--accent)", color: "var(--accent-light)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>Request access</button>
+        ) : status === "denied" ? (
+          <div style={{ fontSize: 11, color: "var(--text-3)", lineHeight: 1.5 }}>
+            Access was denied. Re-enable it in your browser's site settings.
+          </div>
+        ) : (
+          <div style={{ fontSize: 11, color: "var(--text-3)" }}>Manage in browser site settings.</div>
+        )}
+      </div>
+    );
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
+        <Header title="Permissions" />
+        <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <PermRow icon={Camera} label="Camera" status={cameraStatus} onRequest={requestCamera} />
+          <PermRow icon={Bell} label="Notifications" status={notifStatus} onRequest={requestNotif} />
+        </div>
+      </div>
+    );
   }
 
   // Delete sub-view
@@ -4851,12 +4984,13 @@ export default function Stockback() {
     if (screen !== "welcome") return;
     document.documentElement.classList.add("theme-cycling");
     themeBeforeWelcome.current = themeId;
+    setThemeId("stockback-dark");
     const themeKeys = Object.keys(THEMES);
-    let idx = themeKeys.indexOf(themeId);
+    let idx = 0; // start at stockback-dark (index 0)
     const id = setInterval(() => {
       idx = (idx + 1) % themeKeys.length;
       setThemeId(themeKeys[idx]);
-    }, 3000);
+    }, 5000);
     return () => {
       document.documentElement.classList.remove("theme-cycling");
       clearInterval(id);
@@ -5001,17 +5135,12 @@ export default function Stockback() {
   const merchantSpending = useMemo(() => computeMerchantSpending(flips), [flips]);
 
   const tickerItems = useMemo(() => {
-    const items = flips.filter((d) => !d.done).slice(0, 8).map((d) => ({
-      ticker: d.ticker, amount: sumPurchases(d), change: (seededRand(d.ticker.charCodeAt(0)) - 0.5) * 3,
+    return portfolio.slice(0, 8).map((h) => ({
+      ticker: h.ticker,
+      amount: (h.currentPrice ?? 0) * h.shares,
+      change: h.dayChangePct ?? 0,
     }));
-    return items.length >= 3 ? items : [
-      { ticker: "AAPL", amount: 243.8, change: 1.24 },
-      { ticker: "AMZN", amount: 186.8, change: 0.48 },
-      { ticker: "SBUX", amount: 91.85, change: -0.62 },
-      { ticker: "COST", amount: 1010.7, change: 0.92 },
-      { ticker: "NKE", amount: 71.1, change: -1.85 },
-    ];
-  }, [flips]);
+  }, [portfolio]);
 
   // === Sign-in paths ===
   const handleSignIn = async (provider) => {
@@ -5092,8 +5221,27 @@ export default function Stockback() {
   };
 
   const handleSignOut = () => {
-    if (!window.confirm("Sign out of Stockback?")) return;
-    supabase.auth.signOut(); // onAuthStateChange SIGNED_OUT resets all state and routes to welcome
+    setUserCards([]); setSelectedCards([]); setFlips([]); setUnassigned([]); setPortfolio([]);
+    setConnectedBrokers({}); setIsDemoMode(false); setOpenedItemId(null); setOpenedTicker(null);
+    setPermissions({ notifications: false, camera: false, requested: false });
+    setThemeId("stockback-dark");
+    setActiveTab("home");
+    localStorage.removeItem(STORAGE_KEY);
+    dbLoaded.current = false;
+    supabase.auth.signOut(); // fires SIGNED_OUT → setSupabaseUser(null) + setScreen("welcome")
+  };
+
+  const handleDeleteSignedInAccount = async () => {
+    if (!window.confirm("Permanently delete your account and all data? This cannot be undone.")) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await Promise.all([
+        supabase.from("flips").delete().eq("user_id", user.id),
+        supabase.from("portfolio_holdings").delete().eq("user_id", user.id),
+        supabase.from("user_cards").delete().eq("user_id", user.id),
+      ]);
+    }
+    handleSignOut();
   };
 
   const handleOpenSettings = () => setActiveTab("settings");
@@ -5154,7 +5302,7 @@ export default function Stockback() {
   return (
     <>
       <FontLoader />
-      <Shell showTicker={true} tickerItems={tickerItems} showNav={true}
+      <Shell showTicker={portfolio.length > 0} tickerItems={tickerItems} showNav={true}
         activeTab={activeTab} onTabChange={setActiveTab}
         onOpenSettings={handleOpenSettings} settingsActive={activeTab === "settings"}>
 
@@ -5213,6 +5361,9 @@ export default function Stockback() {
             onClose={handleCloseSettings}
             onShowToast={pushToast}
             onSignOut={supabaseUser ? handleSignOut : undefined}
+            supabaseUser={supabaseUser}
+            onSignIn={handleSignIn}
+            onDeleteSignedInAccount={supabaseUser ? handleDeleteSignedInAccount : undefined}
           />
         )}
       </Shell>
