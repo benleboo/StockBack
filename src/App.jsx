@@ -2055,7 +2055,7 @@ const UploadOption = ({ icon: Icon, title, desc, onClick, demo }) => (
 );
 
 // ==================== FLIP TAB ====================
-const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onOpenUpload, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker }) => {
+const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onOpenUpload, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker, statements }) => {
   const active = flips.filter((d) => !d.done);
   const done = flips.filter((d) => d.done);
   const totalCashback = active.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
@@ -2269,31 +2269,33 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           <ArrowRight size={14} color="var(--text-3)" />
         </button>
 
-        <button onClick={onOpenUpload} style={{
-          marginTop: 8, width: "100%",
-          border: "1px solid var(--border-strong)",
-          background: "var(--bg-1)",
-          color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
-          cursor: "pointer",
-          display: "flex", alignItems: "center", gap: 11,
-          textAlign: "left",
-          transition: "all 0.15s",
-        }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: "var(--accent-soft)",
-            border: "1px solid var(--accent)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
+        {(statements ?? []).length === 0 && (
+          <button onClick={onOpenUpload} style={{
+            marginTop: 8, width: "100%",
+            border: "1px solid var(--border-strong)",
+            background: "var(--bg-1)",
+            color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
+            cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 11,
+            textAlign: "left",
+            transition: "all 0.15s",
           }}>
-            <FileText size={16} color="var(--accent-light)" strokeWidth={2.4} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Upload a statement</div>
-            <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import transactions from a PDF</div>
-          </div>
-          <ArrowRight size={14} color="var(--text-3)" />
-        </button>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              background: "var(--accent-soft)",
+              border: "1px solid var(--accent)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <FileText size={16} color="var(--accent-light)" strokeWidth={2.4} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Upload a statement</div>
+              <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import transactions from a PDF</div>
+            </div>
+            <ArrowRight size={14} color="var(--text-3)" />
+          </button>
+        )}
       </div>
 
       {unassigned.length > 0 && (
@@ -4096,7 +4098,7 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
   };
 
   return (
-    <BottomSheet onClose={onClose} title="Upload statement" maxHeight="85vh">
+    <BottomSheet onClose={onClose} title="Upload statement" maxHeight="90vh">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
         {parsedResult ? (
           <div style={{ padding: "28px 14px 20px", textAlign: "center" }}>
@@ -5145,6 +5147,7 @@ export default function Stockback() {
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
   const [showManualFlip, setShowManualFlip] = useState(false);
+  const [showStatementUpload, setShowStatementUpload] = useState(false);
   const [manualFlipDefaultCardId, setManualFlipDefaultCardId] = useState(null);
   const returnToFlipAfterCards = useRef(false);
   const [invalidTickerMain, setInvalidTickerMain] = useState(null); // { query, reason }
@@ -5330,6 +5333,52 @@ export default function Stockback() {
       change: h.dayChangePct ?? 0,
     }));
   }, [portfolio]);
+
+  const handleSimulateUpload = (cardId) => {
+    const flipsSnap = flips;
+    const unassignedSnap = unassigned;
+    const now = new Date();
+    const yr = now.getFullYear();
+    const mo = String(now.getMonth() + 1).padStart(2, "0");
+    const stmtId = `stmt-${yr}-${mo}-${Date.now().toString(36)}`;
+    const merchantPool = [
+      { merchant: "Amazon", ticker: "AMZN", category: "Shopping", desc: "AMAZON.COM", confidence: 0.98, amt: 42.80 + Math.random() * 60 },
+      { merchant: "Starbucks", ticker: "SBUX", category: "Dining", desc: "STARBUCKS #44812", confidence: 0.99, amt: 8.75 + Math.random() * 6 },
+      { merchant: "Uber", ticker: "UBER", category: "Travel", desc: "UBER TRIP", confidence: 0.97, amt: 18.50 + Math.random() * 25 },
+      { merchant: "Target", ticker: "TGT", category: "Shopping", desc: "TARGET #2204", confidence: 0.96, amt: 52.30 + Math.random() * 40 },
+      { merchant: "Chipotle", ticker: "CMG", category: "Dining", desc: "CHIPOTLE #1021", confidence: 0.99, amt: 14.80 + Math.random() * 6 },
+      { merchant: "Apple Store", ticker: "AAPL", category: "Shopping", desc: "APPLE.COM/BILL", confidence: 0.98, amt: 9.99 + Math.random() * 80 },
+    ];
+    const shuffled = [...merchantPool].sort(() => Math.random() - 0.5);
+    const picked = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
+    const today = now.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+    const newFlips = picked.map((m, i) => ({
+      id: `upload-${stmtId}-${i}`,
+      ticker: m.ticker, merchant: m.merchant, category: m.category,
+      cardId, confidence: m.confidence,
+      purchases: [{ date: today, desc: m.desc, amount: +m.amt.toFixed(2) }],
+      flipped: false, done: false, statementId: stmtId,
+    }));
+    const newUnassigned = [{
+      id: `upload-un-${stmtId}`,
+      merchant: "SQ *UNKNOWN VENDOR",
+      rawDesc: "SQ *UNKNOWN VENDOR #77",
+      category: "Shopping",
+      amount: +(22 + Math.random() * 30).toFixed(2),
+      date: today,
+      cardId,
+      statementId: stmtId,
+      confidence: 0.25,
+      suggestions: ["AMZN", "SHOP", "ETSY"],
+    }];
+    setFlips((arr) => [...newFlips, ...arr]);
+    setUnassigned((arr) => [...newUnassigned, ...arr]);
+    setShowStatementUpload(false);
+    pushToast({
+      label: `Parsed ${picked.length} charges + 1 unassigned`,
+      onUndo: () => { setFlips(flipsSnap); setUnassigned(unassignedSnap); },
+    });
+  };
 
   // === Sign-in paths ===
   const handleSignIn = async (provider) => {
@@ -5519,9 +5568,10 @@ export default function Stockback() {
             userCards={userCards}
             portfolio={portfolio} setPortfolio={setPortfolio}
             connectedBrokers={connectedBrokers} broker={broker}
+            statements={statements}
             onOpenItem={openItem}
             onOpenManualAdd={() => setShowManualFlip(true)}
-            onOpenUpload={() => setShowUpload(true)}
+            onOpenUpload={() => setShowStatementUpload(true)}
             onShowToast={pushToast}
           />
         )}
@@ -5629,6 +5679,14 @@ export default function Stockback() {
           query={invalidTickerMain.query}
           reason={invalidTickerMain.reason}
           onClose={() => setInvalidTickerMain(null)}
+        />
+      )}
+
+      {showStatementUpload && (
+        <StatementUploadSheet
+          userCards={userCards}
+          onClose={() => setShowStatementUpload(false)}
+          onUpload={handleSimulateUpload}
         />
       )}
 
