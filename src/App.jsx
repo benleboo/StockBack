@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { supabase } from "./lib/supabase.js";
 import {
   TrendingUp, TrendingDown, Upload, Camera, ArrowRight, ArrowLeft,
   Check, Plus, X, CreditCard, BarChart3, Home, Edit3,
@@ -4832,6 +4833,7 @@ export default function Stockback() {
   const [unassigned, setUnassigned] = useState(() => loadPersistedState()?.unassigned ?? []);
   const [portfolio, setPortfolio] = useState(() => loadPersistedState()?.portfolio ?? []);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [supabaseUser, setSupabaseUser] = useState(null);
 
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
@@ -4850,6 +4852,40 @@ export default function Stockback() {
   const [permissions, setPermissions] = useState({ notifications: false, camera: false, requested: false });
 
   useEffect(() => { applyTheme(themeId); }, [themeId]);
+
+  // Supabase auth: restore existing session on mount and listen for future changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null;
+      setSupabaseUser(user);
+      if (user && screen === "welcome") {
+        setIsDemoMode(false);
+        setFlips([]);
+        setUnassigned([]);
+        setPortfolio([]);
+        setScreen("cards");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user ?? null;
+      setSupabaseUser(user);
+      if (event === "SIGNED_IN" && user) {
+        setIsDemoMode(false);
+        setFlips([]);
+        setUnassigned([]);
+        setPortfolio([]);
+        setScreen("cards");
+      }
+      if (event === "SIGNED_OUT") {
+        setSupabaseUser(null);
+        setScreen("welcome");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (portfolio.length === 0) return;
     const id = setInterval(() => setPortfolio((p) => driftPrices(p)), 8000);
@@ -4905,10 +4941,16 @@ export default function Stockback() {
   }, [flips]);
 
   // === Sign-in paths ===
-  const handleSignIn = (_provider) => {
-    setIsDemoMode(false);
-    setFlips([]); setUnassigned([]); setPortfolio([]);
-    setScreen("cards");
+  const handleSignIn = async (provider) => {
+    if (provider === "google") {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      // Browser redirects to Google; onAuthStateChange handles the return
+    } else if (provider === "apple") {
+      pushToast({ label: "Apple Sign In coming soon" });
+    }
   };
   const handleContinue = () => {
     setIsDemoMode(false);
