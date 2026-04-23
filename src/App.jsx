@@ -4902,26 +4902,37 @@ export default function Stockback() {
     if (activeTab !== "settings") setLastNonSettingsTab(activeTab);
   }, [activeTab]);
 
-  // Persist state on every relevant change (never in demo mode)
-  // When signed in, DB is source of truth for flips/portfolio/userCards — skip those here
+  // Persist state on every relevant change
+  // • Demo mode  → skip entirely (always resets)
+  // • Signed in  → preferences only; DB is source of truth for data arrays
+  // • Guest mode → save everything so data survives refresh
   useEffect(() => {
     if (isDemoMode) return;
     try {
-      const payload = {
-        screen,
-        activeTab,
-        themeId,
-        broker,
-        connectedBrokers,
-        selectedCards,
-        unassigned,
-      };
-      if (!supabaseUser) {
-        payload.userCards = userCards;
-        payload.flips = flips;
-        payload.portfolio = portfolio;
+      if (supabaseUser) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          screen,
+          activeTab,
+          themeId,
+          broker,
+          connectedBrokers,
+          selectedCards,
+          unassigned,
+        }));
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          screen,
+          activeTab,
+          themeId,
+          broker,
+          connectedBrokers,
+          selectedCards,
+          unassigned,
+          userCards,
+          flips,
+          portfolio,
+        }));
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (_) { /* storage full or unavailable — ignore */ }
   }, [isDemoMode, supabaseUser, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio]);
 
