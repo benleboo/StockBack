@@ -4857,7 +4857,7 @@ export default function Stockback() {
 
   // Supabase auth: restore existing session on mount and listen for future changes
   useEffect(() => {
-    const populateFromDb = (user, navigateIfOnWelcome) => {
+    const populateFromDb = (user) => {
       setSupabaseUser(user);
       setIsDemoMode(false);
       dbLoaded.current = false;
@@ -4866,20 +4866,28 @@ export default function Stockback() {
         setPortfolio(dbPortfolio);
         setUserCards(dbCards);
         dbLoaded.current = true;
-        if (navigateIfOnWelcome) setScreen((s) => s === "welcome" ? "cards" : s);
+        // Route based on freshly-loaded cards, not stale state
+        setScreen((s) => {
+          if (dbCards.length === 0) return "cards"; // first-time user: show picker
+          if (s === "app") return "app";            // already in app: stay
+          return "app";                             // welcome / upload / etc: go to app
+        });
       });
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
-      if (user) { populateFromDb(user, true); }
+      if (user) { populateFromDb(user); }
       else { setSupabaseUser(null); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
       if (event === "SIGNED_IN" && user) {
-        populateFromDb(user, true);
+        // Clear transient UI state so we don't restore a stale screen/tab from localStorage
+        setSelectedCards([]);
+        setActiveTab("home");
+        populateFromDb(user);
       }
       if (event === "SIGNED_OUT") {
         dbLoaded.current = false;
