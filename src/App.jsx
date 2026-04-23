@@ -6621,6 +6621,7 @@ export default function Stockback() {
     };
     setUserCards([]); setSelectedCards([]); setFlips([]); setUnassigned([]); setPortfolio([]);
     setConnectedBrokers({}); setIsDemoMode(false); setOpenedItemId(null); setOpenedTicker(null);
+    setBroker("yahoo");
     setPermissions({ notifications: false, camera: false, requested: false });
     setThemeId("stockback-dark");
     localStorage.removeItem(STORAGE_KEY);
