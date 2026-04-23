@@ -3088,12 +3088,18 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
               return;
             }
             setUnassigned((arr) => arr.filter((x) => x.id !== item.id));
+            const resolvedCard = cardsMap[item.cardId];
+            const resolvedCr = resolvedCard?.cashRate ?? 0.01;
+            const resolvedCashback = item.amount * ((resolvedCard ? rateForCategory(resolvedCard, item.category) : 1) / 100);
             setFlips((arr) => [{
               id: `resolved-${item.id}`, ticker: resolved.ticker, merchant: item.merchant,
               category: item.category, cardId: item.cardId, confidence: 1,
               purchases: [{ date: item.date, desc: item.rawDesc, amount: item.amount }],
               flipped: false, done: false, statementId: item.statementId,
               resolvedPrice: resolved.price, resolvedName: resolved.name,
+              effectiveCashRate: resolvedCr,
+              cashValueAtFlip: parseFloat((resolvedCashback * (resolvedCr / 0.01)).toFixed(2)),
+              pointsEquivalent: parseFloat((resolvedCashback / 0.01).toFixed(2)),
             }, ...arr]);
             onShowToast({
               label: `Assigned ${item.merchant} → ${resolved.ticker} @ $${resolved.price.toFixed(2)}`,
@@ -3468,6 +3474,12 @@ const BrandSegmentedBar = ({ flips, cardsMap, total }) => {
 const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, shouldPulse, onToggle, onOpen, onDelete }) => {
   const redemption = card ? inferRedemption(card) : "cash";
   const isPoints = redemption !== "cash";
+  const flipCashRate = card?.cashRate ?? 0.01;
+  const flipBestRate = card?.bestRate ?? 0.01;
+  // Normalize: app's cashback is computed at 1¢/pt baseline; adjust to real cash/travel value
+  const cashNow = cashback * (flipCashRate / 0.01);
+  const bestPossible = cashback * (flipBestRate / 0.01);
+  const showBestLine = flipBestRate > flipCashRate && (flipBestRate - flipCashRate) / flipCashRate > 0.30;
   return (
     <div style={{
       padding: "12px 14px", marginBottom: 8, borderRadius: 14,
@@ -3496,6 +3508,19 @@ const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, shouldPulse,
         <div className="sb-mono" style={{ fontSize: 10.5, color: "var(--text-3)" }}>
           ${totalSpent.toFixed(2)} · {purchaseCount} {purchaseCount === 1 ? "charge" : "charges"} · {card?.shortName?.slice(0, 14) || "—"}
         </div>
+        {!item.flipped && (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: "var(--green)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+              {flipCashRate < 0.01 && <AlertTriangle size={10} color="var(--gold)" style={{ flexShrink: 0 }} />}
+              <span>${cashNow.toFixed(2)} flippable now</span>
+            </div>
+            {showBestLine && (
+              <div style={{ fontSize: 9.5, color: "var(--text-3)", marginTop: 1 }}>
+                Could be worth ${bestPossible.toFixed(2)} as travel (at {(flipBestRate * 100).toFixed(1)}¢/pt)
+              </div>
+            )}
+          </div>
+        )}
       </button>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <div className="sb-mono" style={{
@@ -4053,6 +4078,7 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
       });
       return;
     }
+    const effectiveCashRate = card?.cashRate ?? 0.01;
     onSubmit({
       id: `manual-${Date.now()}`,
       ticker: resolved.ticker,
@@ -4066,6 +4092,9 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
       }],
       flipped: false, done: false, statementId: null,
       resolvedPrice: resolved.price, resolvedName: resolved.name,
+      effectiveCashRate,
+      cashValueAtFlip: parseFloat((estCashback * (effectiveCashRate / 0.01)).toFixed(2)),
+      pointsEquivalent: parseFloat((estCashback / 0.01).toFixed(2)),
     });
   };
 
@@ -4135,6 +4164,21 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
         )}
         <SelectInput label="Card" value={cardId} onChange={setCardId}
           options={userCards.map((c) => ({ value: c.id, label: c.shortName }))} />
+        {card && (
+          <div style={{ padding: "8px 12px", borderRadius: 9, marginBottom: 8, background: "var(--bg-1)", border: "1px solid var(--border)", fontSize: 11.5, color: "var(--text-2)" }}>
+            {(card.bestRate ?? 0.01) === (card.cashRate ?? 0.01)
+              ? `${Math.round((card.cashRate ?? 0.01) * 100)}% cashback · redeems at $${(card.cashRate ?? 0.01).toFixed(2)} per $1`
+              : `Effective cash rate: ${((card.cashRate ?? 0.01) * 100).toFixed(1)}¢ per point (${card.rewardCurrency ?? "points"})`}
+            {(card.cashRate ?? 0.01) < 0.01 && parsedAmt > 0 && (
+              <div style={{ marginTop: 6, fontSize: 11, color: "var(--gold)", display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>
+                  This card earns more when used for travel. Flipping ${estCashback.toFixed(2)} of cashback → ${(estCashback * ((card.cashRate ?? 0.01) / 0.01)).toFixed(2)} cash value. Consider keeping these as points.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
         <SelectInput label="Category" value={category} onChange={setCategory}
           options={[{ value: "", label: "Select category..." }, ...allCategories]} />
         {parsedAmt > 0 && card && (
@@ -4467,6 +4511,7 @@ const CardsTab = ({ userCards, setUserCards, flips, setFlips, merchantSpending, 
   const [showCustom, setShowCustom] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [removingCard, setRemovingCard] = useState(null);
+  const [redeemSheet, setRedeemSheet] = useState(null);
 
   const flipsByCard = useMemo(() => {
     const m = {};
@@ -4542,8 +4587,20 @@ const CardsTab = ({ userCards, setUserCards, flips, setFlips, merchantSpending, 
                   })}
                 </div>
               )}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, padding: "0 2px" }}>
+                <div style={{ fontSize: 11, color: "var(--text-2)" }}>
+                  {(c.bestRate ?? 0.01) > (c.cashRate ?? 0.01)
+                    ? `${((c.cashRate ?? 0.01) * 100).toFixed(1)}¢ per $1 as cash · up to ${((c.bestRate ?? 0.01) * 100).toFixed(1)}¢ as travel`
+                    : `${Math.round((c.cashRate ?? 0.01) * 100)}¢ per $1 cashback`}
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); setRedeemSheet(c); }} style={{
+                  background: "none", border: "none", padding: "0 2px",
+                  color: "var(--accent-light)", fontSize: 11, cursor: "pointer",
+                  fontWeight: 500, flexShrink: 0,
+                }}>How to redeem</button>
+              </div>
               <div style={{
-                display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "0 4px",
+                display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "0 4px",
               }}>
                 <div style={{ flex: 1, fontSize: 10.5, color: "var(--text-3)" }}>
                   {flipsByCard[c.id] ? `${flipsByCard[c.id]} flip${flipsByCard[c.id] !== 1 ? "s" : ""}` : "No flips yet"}
@@ -4580,6 +4637,39 @@ const CardsTab = ({ userCards, setUserCards, flips, setFlips, merchantSpending, 
         </button>
       </div>
 
+      {redeemSheet && (
+        <BottomSheet onClose={() => setRedeemSheet(null)} title={`${redeemSheet.name} · ${redeemSheet.issuer}`} maxHeight="90vh">
+          <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "18px 22px 32px" }}>
+            <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--bg-1)", border: "1px solid var(--border)", marginBottom: 20, textAlign: "center" }}>
+              <div style={{ fontSize: 26, fontWeight: 700, color: "var(--green)", letterSpacing: "-0.03em" }}>
+                {((redeemSheet.cashRate ?? 0.01) * 100).toFixed(1)}¢
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>cash redemption rate per point</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", marginBottom: 12, letterSpacing: "0.07em", textTransform: "uppercase" }}>How to cash out</div>
+            {(redeemSheet.redemptionSteps ?? []).map((step, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 999, background: "var(--accent-soft)", border: "1px solid var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent-light)" }}>{i + 1}</span>
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-1)", lineHeight: 1.5, paddingTop: 2 }}>{step}</div>
+              </div>
+            ))}
+            {redeemSheet.minRedemption != null && (
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2, marginBottom: 20 }}>
+                Minimum redemption: ${redeemSheet.minRedemption}
+              </div>
+            )}
+            {redeemSheet.bestUse && (redeemSheet.bestRate ?? 0.01) > (redeemSheet.cashRate ?? 0.01) && (
+              <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.28)", marginTop: 4 }}>
+                <div style={{ fontSize: 12.5, color: "var(--text-1)", lineHeight: 1.55 }}>
+                  💡 These points can be worth up to <strong>{((redeemSheet.bestRate ?? 0.01) * 100).toFixed(1)}¢</strong> each when you {redeemSheet.bestUse}. Flipping them to cash gives you a lower rate.
+                </div>
+              </div>
+            )}
+          </div>
+        </BottomSheet>
+      )}
       {showAdd && <AddCardModal existing={userCards} onClose={() => setShowAdd(false)}
         onAdd={(c) => { setUserCards((cs) => [...cs, c]); setShowAdd(false); }}
         onOpenCustom={() => { setShowAdd(false); setShowCustom(true); }} />}
@@ -4922,13 +5012,22 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
     const picked = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
 
     const today = now.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
-    const newFlips = picked.map((m, i) => ({
-      id: `upload-${stmtId}-${i}`,
-      ticker: m.ticker, merchant: m.merchant, category: m.category,
-      cardId, confidence: m.confidence,
-      purchases: [{ date: today, desc: m.desc, amount: +m.amt.toFixed(2) }],
-      flipped: false, done: false, statementId: stmtId,
-    }));
+    const uploadCard = userCards.find((c) => c.id === cardId);
+    const uploadCr = uploadCard?.cashRate ?? 0.01;
+    const newFlips = picked.map((m, i) => {
+      const spendAmt = +m.amt.toFixed(2);
+      const itemCashback = spendAmt * ((uploadCard ? rateForCategory(uploadCard, m.category) : 1) / 100);
+      return {
+        id: `upload-${stmtId}-${i}`,
+        ticker: m.ticker, merchant: m.merchant, category: m.category,
+        cardId, confidence: m.confidence,
+        purchases: [{ date: today, desc: m.desc, amount: spendAmt }],
+        flipped: false, done: false, statementId: stmtId,
+        effectiveCashRate: uploadCr,
+        cashValueAtFlip: parseFloat((itemCashback * (uploadCr / 0.01)).toFixed(2)),
+        pointsEquivalent: parseFloat((itemCashback / 0.01).toFixed(2)),
+      };
+    });
 
     // One simulated unassigned
     const newUnassigned = [{
@@ -6535,13 +6634,22 @@ export default function Stockback() {
     const shuffled = [...merchantPool].sort(() => Math.random() - 0.5);
     const picked = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
     const today = now.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
-    const newFlips = picked.map((m, i) => ({
-      id: `upload-${stmtId}-${i}`,
-      ticker: m.ticker, merchant: m.merchant, category: m.category,
-      cardId, confidence: m.confidence,
-      purchases: [{ date: today, desc: m.desc, amount: +m.amt.toFixed(2) }],
-      flipped: false, done: false, statementId: stmtId,
-    }));
+    const demoUploadCard = userCards.find((c) => c.id === cardId);
+    const demoUploadCr = demoUploadCard?.cashRate ?? 0.01;
+    const newFlips = picked.map((m, i) => {
+      const spendAmt = +m.amt.toFixed(2);
+      const itemCashback = spendAmt * ((demoUploadCard ? rateForCategory(demoUploadCard, m.category) : 1) / 100);
+      return {
+        id: `upload-${stmtId}-${i}`,
+        ticker: m.ticker, merchant: m.merchant, category: m.category,
+        cardId, confidence: m.confidence,
+        purchases: [{ date: today, desc: m.desc, amount: spendAmt }],
+        flipped: false, done: false, statementId: stmtId,
+        effectiveCashRate: demoUploadCr,
+        cashValueAtFlip: parseFloat((itemCashback * (demoUploadCr / 0.01)).toFixed(2)),
+        pointsEquivalent: parseFloat((itemCashback / 0.01).toFixed(2)),
+      };
+    });
     const newUnassigned = [{
       id: `upload-un-${stmtId}`,
       merchant: "SQ *UNKNOWN VENDOR",

@@ -16,6 +16,9 @@ function toDbFlip(flip) {
     purchases: flip.purchases ?? [],
     resolved_price: flip.resolvedPrice ?? null,
     resolved_name: flip.resolvedName ?? null,
+    effective_cash_rate: flip.effectiveCashRate ?? null,
+    points_equivalent: flip.pointsEquivalent ?? null,
+    cash_value_at_flip: flip.cashValueAtFlip ?? null,
   };
 }
 
@@ -33,6 +36,9 @@ function fromDbFlip(row) {
     purchases: row.purchases ?? [],
     resolvedPrice: row.resolved_price,
     resolvedName: row.resolved_name,
+    effectiveCashRate: row.effective_cash_rate,
+    pointsEquivalent: row.points_equivalent,
+    cashValueAtFlip: row.cash_value_at_flip,
   };
 }
 
@@ -116,6 +122,8 @@ export async function syncFlips(flips) {
       category: dbRow.category, card_id: dbRow.card_id, confidence: dbRow.confidence,
       flipped: dbRow.flipped, done: dbRow.done, statement_id: dbRow.statement_id,
       purchases: dbRow.purchases, resolved_price: dbRow.resolved_price, resolved_name: dbRow.resolved_name,
+      effective_cash_rate: dbRow.effective_cash_rate, points_equivalent: dbRow.points_equivalent,
+      cash_value_at_flip: dbRow.cash_value_at_flip,
     };
     if (JSON.stringify(stateRow) !== JSON.stringify(dbCompare)) {
       const { error } = await supabase.from("flips").update(stateRow).eq("id", f.id).eq("user_id", user.id);
