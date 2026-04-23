@@ -4836,6 +4836,8 @@ export default function Stockback() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [supabaseUser, setSupabaseUser] = useState(null);
   const dbLoaded = useRef(false); // true after loadUserData() has populated state
+  // Per-effect flags: skip the first sync fire after a load (state is stale at that point)
+  const firstSyncAfterLoad = useRef({ flips: false, portfolio: false, cards: false });
 
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
@@ -4865,6 +4867,7 @@ export default function Stockback() {
         setFlips(dbFlips);
         setPortfolio(dbPortfolio);
         setUserCards(dbCards);
+        firstSyncAfterLoad.current = { flips: true, portfolio: true, cards: true };
         dbLoaded.current = true;
         // Route based on freshly-loaded cards, not stale state
         setScreen((s) => {
@@ -4948,6 +4951,7 @@ export default function Stockback() {
   const syncFlipsTimer = useRef(null);
   useEffect(() => {
     if (!supabaseUser || !dbLoaded.current) return;
+    if (firstSyncAfterLoad.current.flips) { firstSyncAfterLoad.current.flips = false; return; }
     clearTimeout(syncFlipsTimer.current);
     syncFlipsTimer.current = setTimeout(() => syncFlips(flips), 1500);
     return () => clearTimeout(syncFlipsTimer.current);
@@ -4956,6 +4960,7 @@ export default function Stockback() {
   const syncPortfolioTimer = useRef(null);
   useEffect(() => {
     if (!supabaseUser || !dbLoaded.current) return;
+    if (firstSyncAfterLoad.current.portfolio) { firstSyncAfterLoad.current.portfolio = false; return; }
     clearTimeout(syncPortfolioTimer.current);
     syncPortfolioTimer.current = setTimeout(() => syncPortfolio(portfolio), 1500);
     return () => clearTimeout(syncPortfolioTimer.current);
@@ -4965,6 +4970,7 @@ export default function Stockback() {
   useEffect(() => {
     console.log('[sync] userCards effect fired. supabaseUser:', !!supabaseUser, 'dbLoaded:', dbLoaded.current, 'userCards length:', userCards.length);
     if (!supabaseUser || !dbLoaded.current) return;
+    if (firstSyncAfterLoad.current.cards) { firstSyncAfterLoad.current.cards = false; return; }
     clearTimeout(syncCardsTimer.current);
     syncCardsTimer.current = setTimeout(() => syncUserCards(userCards), 1500);
     return () => clearTimeout(syncCardsTimer.current);
