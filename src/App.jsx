@@ -3823,7 +3823,7 @@ const RemoveCardModal = ({ card, otherCards, flipCount, onClose, onConfirm }) =>
 };
 
 // ==================== STATEMENTS TAB ====================
-const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unassigned, setUnassigned, onShowToast }) => {
+const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unassigned, setUnassigned, onShowToast, onGoToCards }) => {
   const [showReminder, setShowReminder] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingStmt, setDeletingStmt] = useState(null); // statement object to delete
@@ -3937,7 +3937,7 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
           </div>
         </div>
         {showUpload && (
-          <StatementUploadSheet userCards={userCards} onClose={() => setShowUpload(false)} onUpload={simulateUpload} />
+          <StatementUploadSheet userCards={userCards} onClose={() => setShowUpload(false)} onUpload={simulateUpload} onGoToCards={onGoToCards} />
         )}
       </>
     );
@@ -4017,7 +4017,7 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
         </div>
       </div>
       {showUpload && (
-        <StatementUploadSheet userCards={userCards} onClose={() => setShowUpload(false)} onUpload={simulateUpload} />
+        <StatementUploadSheet userCards={userCards} onClose={() => setShowUpload(false)} onUpload={simulateUpload} onGoToCards={onGoToCards} />
       )}
       {deletingStmt && (
         <BottomSheet onClose={() => setDeletingStmt(null)} title={`Delete ${deletingStmt.month}?`}>
@@ -4080,7 +4080,7 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
 };
 
 // Simplified statement upload sheet for in-app reuse (the full StatementUpload component is used during onboarding).
-const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
+const StatementUploadSheet = ({ userCards, onClose, onUpload, onGoToCards }) => {
   const [selectedCardId, setSelectedCardId] = useState(userCards[0]?.id || "");
   const [method, setMethod] = useState(null); // null | 'pdf' | 'camera'
   const [parsing, setParsing] = useState(false);
@@ -4148,9 +4148,26 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
         ) : !parsing ? (
           <>
             {userCards.length === 0 ? (
-              <div style={{ padding: "20px 14px", borderRadius: 12, background: "var(--bg-1)", border: "1px dashed var(--text-4)", textAlign: "center" }}>
-                <div style={{ fontSize: 12.5, color: "var(--text-1)", fontWeight: 500 }}>No cards yet</div>
-                <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>Add a card first so we know which rewards rates to apply.</div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5 }}>
+                  Add a card first so we know which rewards rates to apply.
+                </div>
+                <button onClick={onGoToCards} style={{
+                  width: "100%", padding: "18px 16px", borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
+                  color: "#fff", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 14,
+                  textAlign: "left",
+                  boxShadow: "0 6px 16px rgba(76, 139, 245, 0.3)",
+                  overflow: "hidden", position: "relative",
+                }}>
+                  <MiniCardIllustration variant="catalog" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 2 }}>Add a card</div>
+                    <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.3 }}>Search the catalog — add manually if not found</div>
+                  </div>
+                  <ArrowRight size={18} color="#fff" strokeWidth={2.3} />
+                </button>
               </div>
             ) : (
               <>
@@ -5150,6 +5167,7 @@ export default function Stockback() {
   const [showStatementUpload, setShowStatementUpload] = useState(false);
   const [manualFlipDefaultCardId, setManualFlipDefaultCardId] = useState(null);
   const returnToFlipAfterCards = useRef(false);
+  const returnToStatementUploadAfterCards = useRef(false);
   const [invalidTickerMain, setInvalidTickerMain] = useState(null); // { query, reason }
   const [toasts, setToasts] = useState([]);
 
@@ -5510,10 +5528,12 @@ export default function Stockback() {
             userCards={userCards} setUserCards={setUserCards}
             onBack={() => {
               returnToFlipAfterCards.current = false;
+              returnToStatementUploadAfterCards.current = false;
               setScreen("welcome");
             }}
             onSkip={() => {
               returnToFlipAfterCards.current = false;
+              returnToStatementUploadAfterCards.current = false;
               setScreen("upload");
             }}
             onNext={() => {
@@ -5523,6 +5543,10 @@ export default function Stockback() {
                 setManualFlipDefaultCardId(lastSelected);
                 setScreen("app");
                 setShowManualFlip(true);
+              } else if (returnToStatementUploadAfterCards.current) {
+                returnToStatementUploadAfterCards.current = false;
+                setScreen("app");
+                setShowStatementUpload(true);
               } else {
                 setScreen("upload");
               }
@@ -5587,7 +5611,11 @@ export default function Stockback() {
             userCards={userCards}
             flips={flips} setFlips={setFlips}
             unassigned={unassigned} setUnassigned={setUnassigned}
-            onShowToast={pushToast} />
+            onShowToast={pushToast}
+            onGoToCards={() => {
+              returnToStatementUploadAfterCards.current = true;
+              setScreen("cards");
+            }} />
         )}
 
         {activeTab === "cards" && (
@@ -5687,6 +5715,11 @@ export default function Stockback() {
           userCards={userCards}
           onClose={() => setShowStatementUpload(false)}
           onUpload={handleSimulateUpload}
+          onGoToCards={() => {
+            setShowStatementUpload(false);
+            returnToStatementUploadAfterCards.current = true;
+            setScreen("cards");
+          }}
         />
       )}
 
