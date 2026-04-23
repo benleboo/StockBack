@@ -206,6 +206,13 @@ const FontLoader = () => (
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg-0, #05080d); transition: background 0.3s; }
 
+    /* Smooth cross-fade when cycling themes on the welcome screen */
+    html.theme-cycling .sb-root,
+    html.theme-cycling .sb-root * {
+      transition: background-color 600ms ease, background 600ms ease,
+                  color 600ms ease, border-color 600ms ease !important;
+    }
+
     .sb-root {
       font-family: var(--font-stack, 'Plus Jakarta Sans', -apple-system, sans-serif);
       color: var(--text-1);
@@ -1023,7 +1030,7 @@ const StockbackLogo = ({ size = 40, color }) => {
 const TickerBanner = ({ items }) => {
   if (!items.length) return null;
   const content = items;
-  const NYSE_GREEN = "#00c853", NYSE_RED = "#ff3d3d", NYSE_YELLOW = "#ffd740";
+  const NYSE_MUTED = "#888888", NYSE_YELLOW = "#ffd740";
   return (
     <div style={{
       background: "#000000", borderBottom: "1px solid #222",
@@ -1050,7 +1057,7 @@ const TickerBanner = ({ items }) => {
             <span style={{ color: "#ffffff", fontWeight: 700 }}>{it.ticker}</span>
             <span style={{ color: "#c4c4c4", fontSize: 11 }}>${it.amount.toFixed(2)}</span>
             <span style={{
-              color: it.change >= 0 ? NYSE_GREEN : NYSE_RED, fontSize: 10.5, fontWeight: 600,
+              color: NYSE_MUTED, fontSize: 10.5, fontWeight: 600,
             }}>
               {it.change >= 0 ? "▲" : "▼"} {Math.abs(it.change).toFixed(2)}%
             </span>
@@ -1291,7 +1298,7 @@ const StepHeader = ({ step, total, title, subtitle, onBack, onSkip, skipLabel })
       {onSkip ? (
         <button onClick={onSkip} style={{
           border: "none", background: "transparent", color: "var(--text-2)",
-          fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+          fontSize: 13.5, fontWeight: 500, cursor: "pointer", padding: "10px 16px",
         }}>{skipLabel || "Skip"}</button>
       ) : <div style={{ width: 34 }} />}
     </div>
@@ -1852,7 +1859,7 @@ const CustomCardModal = ({ onClose, onAdd }) => {
 // ==================== STATEMENT UPLOAD ====================
 // Camera/PDF buttons always clickable. If camera permission hasn't been granted,
 // clicking it will RE-TRY the permission request — not grey it out.
-const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions }) => {
+const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, isDemoMode = false }) => {
   const [step, setStep] = useState(permissions.requested ? "method" : "permissions");
 
   const tryNotifications = async () => {
@@ -1922,7 +1929,7 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions }
               <b style={{ color: "var(--text-1)" }}>Photos are never saved.</b> After we read the statement, the photo is wiped.
             </div>
           </div>
-          <div style={{ marginTop: 2 }}><DemoPill tooltip="Permissions are requested via real browser APIs" /></div>
+          {isDemoMode && <div style={{ marginTop: 2 }}><DemoPill tooltip="Permissions are requested via real browser APIs" /></div>}
         </div>
         <div style={{ padding: "12px 26px 22px", display: "flex", gap: 10, flexShrink: 0 }}>
           <button onClick={denyAll} style={{
@@ -4842,6 +4849,7 @@ export default function Stockback() {
   // Cycle through all themes while the welcome screen is active; restore on exit
   useEffect(() => {
     if (screen !== "welcome") return;
+    document.documentElement.classList.add("theme-cycling");
     themeBeforeWelcome.current = themeId;
     const themeKeys = Object.keys(THEMES);
     let idx = themeKeys.indexOf(themeId);
@@ -4850,6 +4858,7 @@ export default function Stockback() {
       setThemeId(themeKeys[idx]);
     }, 3000);
     return () => {
+      document.documentElement.classList.remove("theme-cycling");
       clearInterval(id);
       if (themeBeforeWelcome.current !== null) {
         setThemeId(themeBeforeWelcome.current);
@@ -5130,6 +5139,7 @@ export default function Stockback() {
         <Shell showTicker={false} showNav={false}>
           <StatementUpload
             permissions={permissions} setPermissions={setPermissions}
+            isDemoMode={isDemoMode}
             onBack={() => setScreen("cards")}
             onSkip={() => { setScreen("app"); setActiveTab("home"); }}
             onNext={() => { setScreen("app"); setActiveTab("home"); }}
