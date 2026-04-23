@@ -225,6 +225,12 @@ const FontLoader = () => (
     }
     .cta-pulse { animation: cta-pulse 2.2s ease-in-out infinite; }
 
+    @keyframes selector-pulse {
+      0%, 100% { border-color: var(--text-4); box-shadow: none; }
+      50%      { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    }
+    .selector-pulse { animation: selector-pulse 1.5s ease-in-out infinite; }
+
     .soft-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .soft-scroll::-webkit-scrollbar-thumb { background: var(--text-4); border-radius: 999px; }
     .soft-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -1174,24 +1180,22 @@ const WelcomePreview = () => {
   const s = WELCOME_PREVIEW_STEPS[step];
 
   return (
-    <div style={{ marginTop: 18 }}>
+    <div style={{ marginBottom: 18 }}>
       <button onClick={() => setOpen(!open)} style={{
-        width: "100%", background: "none", border: "none",
-        cursor: "pointer", padding: "6px 0",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-        color: "var(--text-3)", fontSize: 11.5, fontWeight: 600,
+        background: "none", border: "none", cursor: "pointer",
+        padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 4,
+        color: "var(--accent-light)", fontSize: 12, fontWeight: 600,
       }}>
-        See how it works
-        {open ? <ChevronUp size={13} strokeWidth={2.2} /> : <ChevronDown size={13} strokeWidth={2.2} />}
+        {open ? <>Close preview <ChevronUp size={13} strokeWidth={2.2} /></> : <>See how it works <ChevronDown size={13} strokeWidth={2.2} /></>}
       </button>
       <div style={{
         overflow: "hidden",
-        maxHeight: open ? 120 : 0,
+        maxHeight: open ? 140 : 0,
         opacity: open ? 1 : 0,
-        transition: "max-height 0.3s ease, opacity 0.25s ease",
+        transition: "max-height 0.4s ease, opacity 0.3s ease",
       }}>
         <div style={{
-          padding: "14px 16px", borderRadius: 14,
+          marginTop: 8, padding: "14px 16px", borderRadius: 14,
           background: "var(--bg-1)", border: "1px solid var(--border-strong)",
           display: "flex", alignItems: "center", gap: 14,
         }}>
@@ -1206,10 +1210,7 @@ const WelcomePreview = () => {
             {s.badge}
           </div>
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: "var(--text-1)",
-              transition: "opacity 0.3s", marginBottom: 2,
-            }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)", marginBottom: 2 }}>
               {s.label}
             </div>
             <div style={{ fontSize: 10.5, color: "var(--text-3)", lineHeight: 1.4 }}>
@@ -1254,6 +1255,8 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           Make your cashback<br />make{" "}
           <span className="color-shuffle" style={{ color: "var(--accent)" }}>cashback</span>.
         </h1>
+
+        <WelcomePreview />
 
         <p style={{
           fontSize: 13.5, lineHeight: 1.55, color: "var(--text-2)",
@@ -1329,9 +1332,7 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           </div>
         </div>
 
-        <WelcomePreview />
-
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+        <div style={{ marginTop: 18, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <div style={{ display: "flex", gap: 5 }}>
             {Object.values(THEMES).map((t, i) => (
               <div key={i} style={{
@@ -2451,58 +2452,63 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           </div>
         </div>
 
-        <button onClick={onOpenManualAdd} style={{
-          marginTop: 14, width: "100%",
-          border: "1px solid var(--border-strong)",
-          background: "var(--bg-1)",
-          color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
-          cursor: "pointer",
-          display: "flex", alignItems: "center", gap: 11,
-          textAlign: "left",
-          transition: "all 0.15s",
-        }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: "var(--accent-soft)",
-            border: "1px solid var(--accent)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <Plus size={16} color="var(--accent-light)" strokeWidth={2.4} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Add manual flip</div>
-            <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Log a charge without uploading a statement</div>
-          </div>
-          <ArrowRight size={14} color="var(--text-3)" />
-        </button>
-
-        {(statements ?? []).length === 0 && (
-          <button onClick={onOpenUpload} style={{
-            marginTop: 8, width: "100%",
-            border: "1px solid var(--border-strong)",
-            background: "var(--bg-1)",
-            color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
-            cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 11,
-            textAlign: "left",
-            transition: "all 0.15s",
-          }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: "var(--accent-soft)",
-              border: "1px solid var(--accent)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
+        {/* Hide quick-action tiles when first-time hero is showing — hero has its own buttons */}
+        {(!empty || isDemoMode) && (
+          <>
+            <button onClick={onOpenManualAdd} style={{
+              marginTop: 14, width: "100%",
+              border: "1px solid var(--border-strong)",
+              background: "var(--bg-1)",
+              color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 11,
+              textAlign: "left",
+              transition: "all 0.15s",
             }}>
-              <FileText size={16} color="var(--accent-light)" strokeWidth={2.4} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Upload a statement</div>
-              <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import transactions from a PDF</div>
-            </div>
-            <ArrowRight size={14} color="var(--text-3)" />
-          </button>
+              <div style={{
+                width: 32, height: 32, borderRadius: 10,
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Plus size={16} color="var(--accent-light)" strokeWidth={2.4} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Add manual flip</div>
+                <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Log a charge without uploading a statement</div>
+              </div>
+              <ArrowRight size={14} color="var(--text-3)" />
+            </button>
+
+            {(statements ?? []).length === 0 && (
+              <button onClick={onOpenUpload} style={{
+                marginTop: 8, width: "100%",
+                border: "1px solid var(--border-strong)",
+                background: "var(--bg-1)",
+                color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
+                cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 11,
+                textAlign: "left",
+                transition: "all 0.15s",
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  background: "var(--accent-soft)",
+                  border: "1px solid var(--accent)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <FileText size={16} color="var(--accent-light)" strokeWidth={2.4} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Upload a statement</div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import transactions from a PDF</div>
+                </div>
+                <ArrowRight size={14} color="var(--text-3)" />
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -2731,6 +2737,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
             cashback={cashbackFor(d, cardsMap)}
             totalSpent={sumPurchases(d)}
             purchaseCount={d.purchases.length}
+            shouldPulse={selectedCount === 0}
             onToggle={() => toggleFlip(d.id)}
             onOpen={() => onOpenItem(d.id)}
             onDelete={() => deleteFlip(d.id)}
@@ -2936,7 +2943,7 @@ const BrandSegmentedBar = ({ flips, cardsMap, total }) => {
 };
 
 // ==================== FLIP ROW + CHART HELPERS ====================
-const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, onToggle, onOpen, onDelete }) => {
+const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, shouldPulse, onToggle, onOpen, onDelete }) => {
   const redemption = card ? inferRedemption(card) : "cash";
   const isPoints = redemption !== "cash";
   return (
@@ -2955,7 +2962,7 @@ const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, onToggle, on
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-1)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-            {item.merchant}
+            {item.resolvedName || item.merchant}
           </div>
           <span style={{
             fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 4,
@@ -2975,14 +2982,16 @@ const FlipRow = ({ item, card, cashback, totalSpent, purchaseCount, onToggle, on
         }}>${cashback.toFixed(2)}</div>
         {isPoints && <RedemptionBadge card={card} size="sm" />}
       </div>
-      <button onClick={onToggle} style={{
-        width: 30, height: 30, borderRadius: 10,
-        background: item.flipped ? "var(--accent)" : "transparent",
-        border: item.flipped ? "none" : "1.5px solid var(--text-4)",
-        cursor: "pointer", flexShrink: 0,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        transition: "all 0.15s",
-      }}>
+      <button onClick={onToggle}
+        className={!item.flipped && shouldPulse ? "selector-pulse" : undefined}
+        style={{
+          width: 30, height: 30, borderRadius: 10,
+          background: item.flipped ? "var(--accent)" : "transparent",
+          border: item.flipped ? "none" : "1.5px solid var(--text-4)",
+          cursor: "pointer", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.15s, border-color 0.15s",
+        }}>
         {item.flipped && <Check size={16} color="#fff" strokeWidth={3} />}
       </button>
       <button onClick={onDelete} title="Delete" style={{
@@ -4131,12 +4140,203 @@ const RemoveCardModal = ({ card, otherCards, flipCount, onClose, onConfirm }) =>
   );
 };
 
+// ==================== STATEMENT EDIT SHEET ====================
+const StatementEditSheet = ({ stmt, flips, setFlips, onClose, isDemoMode, onShowToast }) => {
+  const stmtFlips = flips.filter((f) => f.statementId === stmt.id && !f.done);
+  const [rows, setRows] = useState(() => stmtFlips.map((f) => ({ ...f })));
+  const [saving, setSaving] = useState(false);
+
+  const updateRow = (id, patch) => setRows((rs) => rs.map((r) => r.id === id ? { ...r, ...patch } : r));
+  const removeRow = (id) => setRows((rs) => rs.filter((r) => r.id !== id));
+
+  const save = () => {
+    if (isDemoMode) { onClose(); return; }
+    const snap = flips;
+    const removedIds = new Set(stmtFlips.map((f) => f.id).filter((id) => !rows.find((r) => r.id === id)));
+    setFlips((arr) => arr
+      .filter((f) => !removedIds.has(f.id))
+      .map((f) => {
+        const updated = rows.find((r) => r.id === f.id);
+        return updated ? { ...f, ticker: updated.ticker, resolvedPrice: updated.resolvedPrice, resolvedName: updated.resolvedName } : f;
+      })
+    );
+    onShowToast({ label: "Statement updated", onUndo: () => setFlips(snap) });
+    onClose();
+  };
+
+  return (
+    <BottomSheet onClose={onClose} title={`Edit ${stmt.month}`}>
+      <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "8px 22px 24px" }}>
+        {isDemoMode && (
+          <div style={{
+            padding: "9px 12px", borderRadius: 10, marginBottom: 12,
+            background: "rgba(217,179,104,0.1)", border: "1px solid rgba(217,179,104,0.3)",
+            fontSize: 11, color: "var(--gold)", display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <EyeOff size={12} /> Read-only in demo mode — changes won't persist
+          </div>
+        )}
+        {rows.length === 0 && (
+          <div style={{ padding: "24px 0", textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
+            All transactions removed
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {rows.map((row) => (
+            <StatementFlipEditRow
+              key={row.id}
+              flip={row}
+              disabled={isDemoMode}
+              onChange={(patch) => updateRow(row.id, patch)}
+              onRemove={() => removeRow(row.id)}
+            />
+          ))}
+        </div>
+        <button onClick={save} disabled={saving} style={{
+          width: "100%", marginTop: 16, padding: "13px",
+          background: isDemoMode ? "var(--bg-2)" : "var(--accent)",
+          color: isDemoMode ? "var(--text-3)" : "#fff",
+          border: "none", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
+        }}>
+          {isDemoMode ? "Close (read-only)" : "Save changes"}
+        </button>
+      </div>
+    </BottomSheet>
+  );
+};
+
+const StatementFlipEditRow = ({ flip, disabled, onChange, onRemove }) => {
+  const [ticker, setTicker] = useState(flip.ticker);
+  const [editing, setEditing] = useState(false);
+  const [suggested, setSuggested] = useState(null);
+  const [resolving, setResolving] = useState(false);
+
+  useEffect(() => {
+    if (!editing || ticker.length < 1) { setSuggested(null); return; }
+    const key = ticker.toLowerCase();
+    if (_searchCache[key] !== undefined) { if (_searchCache[key]) setSuggested(_searchCache[key]); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/yahoo?endpoint=search&q=${encodeURIComponent(ticker)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const found = (data?.quotes || []).find((h) => h?.symbol && (h.quoteType === "EQUITY" || h.quoteType === "ETF"));
+          if (found?.symbol) {
+            const s = { ticker: found.symbol, name: found.shortname || found.longname || found.symbol };
+            _searchCache[key] = s;
+            setSuggested(s);
+          }
+        }
+      } catch (_) {}
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [ticker, editing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const verify = async () => {
+    if (resolving || disabled) return;
+    const tkr = ticker.trim().toUpperCase();
+    if (!tkr) return;
+    setResolving(true);
+    const resolved = await resolveTicker(tkr);
+    setResolving(false);
+    if (resolved) {
+      setTicker(resolved.ticker);
+      setSuggested(null);
+      setEditing(false);
+      onChange({ ticker: resolved.ticker, resolvedPrice: resolved.price, resolvedName: resolved.name });
+    }
+  };
+
+  const useSuggestion = (s) => {
+    setTicker(s.ticker);
+    setSuggested(null);
+    setEditing(false);
+    onChange({ ticker: s.ticker, resolvedName: s.name });
+  };
+
+  return (
+    <div style={{
+      padding: "12px 13px", borderRadius: 13,
+      background: "var(--bg-1)", border: "1px solid var(--border)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: editing ? 10 : 0 }}>
+        <BrandTile merchant={flip.merchant} ticker={flip.ticker} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-1)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {flip.resolvedName || flip.merchant}
+          </div>
+          <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>
+            {flip.purchases.reduce((a, b) => a + b.amount, 0).toFixed(2)} spent
+          </div>
+        </div>
+        <button onClick={() => !disabled && setEditing(!editing)} style={{
+          padding: "4px 8px", borderRadius: 7,
+          background: "var(--accent-soft)", border: "1px solid var(--accent)",
+          color: "var(--accent-light)", fontSize: 10.5, fontWeight: 700,
+          cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+        }}>{flip.ticker}</button>
+        <button onClick={() => !disabled && onRemove()} title="Remove transaction" style={{
+          width: 26, height: 26, borderRadius: 7, border: "none",
+          background: "transparent", color: "var(--text-4)",
+          cursor: disabled ? "default" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          opacity: disabled ? 0.4 : 1,
+        }}><X size={13} /></button>
+      </div>
+      {editing && (
+        <div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              placeholder="e.g. SBUX"
+              style={{
+                flex: 1, padding: "8px 10px", borderRadius: 9,
+                background: "var(--bg-0)", border: "1px solid var(--border-strong)",
+                color: "var(--text-1)", fontSize: 12, fontWeight: 600,
+              }}
+            />
+            <button onClick={verify} disabled={resolving || !ticker.trim()} style={{
+              padding: "8px 12px", borderRadius: 9, border: "none",
+              background: "var(--accent)", color: "#fff",
+              fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 5,
+            }}>
+              {resolving ? <div style={{ width: 11, height: 11, borderRadius: 999, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 0.7s linear infinite" }} /> : null}
+              Verify
+            </button>
+          </div>
+          {suggested && suggested.ticker !== flip.ticker && (
+            <div style={{
+              marginTop: 7, padding: "8px 10px", borderRadius: 9,
+              background: "var(--accent-soft)", border: "1px solid var(--accent)",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <Sparkles size={12} color="var(--accent-light)" />
+              <div style={{ flex: 1, fontSize: 10.5, color: "var(--text-1)" }}>
+                <b>{suggested.ticker}</b>{suggested.name ? ` — ${suggested.name}` : ""}
+              </div>
+              <button onClick={() => useSuggestion(suggested)} style={{
+                padding: "3px 8px", borderRadius: 6, border: "none",
+                background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
+              }}>Use</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==================== STATEMENTS TAB ====================
-const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unassigned, setUnassigned, onShowToast, onGoToCards }) => {
+const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unassigned, setUnassigned, onShowToast, onGoToCards, isDemoMode }) => {
   const [showReminder, setShowReminder] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingStmt, setDeletingStmt] = useState(null); // statement object to delete
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [editingStmt, setEditingStmt] = useState(null); // statement to edit
 
   const deleteStatement = (stmt) => {
     const flipsSnap = flips;
@@ -4315,6 +4515,12 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
                   {cardsMap[s.cardId]?.shortName || "—"} · {s.purchaseCount} charge{s.purchaseCount !== 1 ? "s" : ""} · {s.uploadedAt}
                 </div>
               </div>
+              <button onClick={() => setEditingStmt(s)} title="Edit statement" style={{
+                width: 32, height: 32, border: "1px solid var(--border-strong)",
+                background: "transparent", color: "var(--text-2)",
+                borderRadius: 8, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}><Edit3 size={13} /></button>
               <button onClick={() => setDeletingStmt(s)} title="Delete statement" style={{
                 width: 32, height: 32, border: "none",
                 background: "transparent", color: "var(--text-3)",
@@ -4383,6 +4589,16 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
             </div>
           </div>
         </BottomSheet>
+      )}
+      {editingStmt && (
+        <StatementEditSheet
+          stmt={editingStmt}
+          flips={flips}
+          setFlips={setFlips}
+          onClose={() => setEditingStmt(null)}
+          isDemoMode={isDemoMode}
+          onShowToast={onShowToast}
+        />
       )}
     </>
   );
@@ -5605,6 +5821,7 @@ export default function Stockback() {
       // Immediately clear stale/demo data so no previous session bleeds through
       // while the DB load is in-flight. Sync effects are blocked by dbLoaded=false.
       setFlips([]);
+      setUnassigned([]);
       setPortfolio([]);
       setUserCards([]);
       loadUserData().then(({ flips: dbFlips, portfolio: dbPortfolio, userCards: dbCards }) => {
@@ -5978,6 +6195,7 @@ export default function Stockback() {
             userCards={userCards}
             flips={flips} setFlips={setFlips}
             unassigned={unassigned} setUnassigned={setUnassigned}
+            isDemoMode={isDemoMode}
             onShowToast={pushToast}
             onGoToCards={() => {
               setActiveTab("cards");
