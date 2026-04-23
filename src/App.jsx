@@ -3085,7 +3085,7 @@ const PurchaseDetail = ({ item, card, cardsMap, userCards, onClose, onUpdate, on
 };
 
 // ==================== MANUAL FLIP MODAL ====================
-const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker }) => {
+const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoToCards }) => {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [cardId, setCardId] = useState(userCards[0]?.id || "");
@@ -3099,20 +3099,19 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker }) => {
     const hit = lookupMerchant(merchant);
     if (hit && hit.ticker && hit.confidence >= 0.7) {
       setSuggested({ ticker: hit.ticker, category: hit.category, confidence: hit.confidence });
-      if (!ticker) setTicker(hit.ticker);
-      if (!category) setCategory(hit.category);
     } else {
       setSuggested(null);
     }
   }, [merchant]);
 
+  const card = userCards.find((c) => c.id === cardId);
+
   const allCategories = useMemo(() => {
     const s = new Set();
-    userCards.forEach((c) => c.rewards.forEach((r) => s.add(r.category)));
+    if (card) card.rewards.forEach((r) => s.add(r.category));
+    s.add("Everything else");
     return Array.from(s);
-  }, [userCards]);
-
-  const card = userCards.find((c) => c.id === cardId);
+  }, [card]);
   const parsedAmt = parseFloat(amount) || 0;
   const rate = card ? rateForCategory(card, category || "Everything") : 1;
   const estCashback = parsedAmt * (rate / 100);
@@ -3147,6 +3146,22 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker }) => {
     });
   };
 
+  if (userCards.length === 0) {
+    return (
+      <BottomSheet onClose={onClose} title="Add manual flip">
+        <div style={{ padding: "36px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <CreditCard size={38} color="var(--text-3)" style={{ marginBottom: 14 }} />
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-1)", marginBottom: 8 }}>No cards added yet</div>
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 24, lineHeight: 1.5 }}>Add a credit card first so we can calculate your cashback rate.</div>
+          <button onClick={onGoToCards} style={{
+            padding: "11px 28px", borderRadius: 12, border: "none",
+            background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}>Add a card</button>
+        </div>
+      </BottomSheet>
+    );
+  }
+
   return (
     <BottomSheet onClose={onClose} title="Add manual flip">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
@@ -3161,7 +3176,7 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker }) => {
             <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
               Looks like <b>{suggested.ticker}</b> ({suggested.category})
             </div>
-            <button onClick={() => { setTicker(suggested.ticker); setCategory(suggested.category); }} style={{
+            <button onClick={() => { setTicker(suggested.ticker); setCategory(suggested.category); setSuggested(null); }} style={{
               padding: "4px 8px", borderRadius: 7, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
             }}>Use</button>
@@ -5226,7 +5241,8 @@ export default function Stockback() {
     setActiveTab("home");
     localStorage.removeItem(STORAGE_KEY);
     dbLoaded.current = false;
-    supabase.auth.signOut(); // fires SIGNED_OUT → setSupabaseUser(null) + setScreen("welcome")
+    setScreen("welcome");
+    supabase.auth.signOut(); // fires SIGNED_OUT → setSupabaseUser(null)
   };
 
   const handleDeleteSignedInAccount = async () => {
@@ -5268,7 +5284,7 @@ export default function Stockback() {
             selected={selectedCards} setSelected={setSelectedCards}
             userCards={userCards} setUserCards={setUserCards}
             onBack={() => setScreen("welcome")}
-            onSkip={() => { setScreen("app"); setActiveTab("home"); }}
+            onSkip={() => setScreen("upload")}
             onNext={() => setScreen("upload")}
           />
         </Shell>
@@ -5398,6 +5414,7 @@ export default function Stockback() {
         <ManualFlipModal
           userCards={userCards}
           onClose={() => setShowManualFlip(false)}
+          onGoToCards={() => { setShowManualFlip(false); setScreen("cards"); }}
           onInvalidTicker={(info) => setInvalidTickerMain(info)}
           onSubmit={(newFlip) => {
             setFlips((arr) => [newFlip, ...arr]);
