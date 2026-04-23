@@ -1135,6 +1135,102 @@ const BottomNav = ({ active, onChange, onOpenSettings, settingsActive }) => {
   );
 };
 
+// ==================== WELCOME PREVIEW ====================
+const WELCOME_PREVIEW_STEPS = [
+  {
+    label: "You spend at Starbucks",
+    detail: "$4.75 latte · 4% cashback card",
+    badge: "+$0.19",
+    badgeColor: "#00c805",
+  },
+  {
+    label: "Stockback flips it",
+    detail: "$0.19 cashback → stock purchase",
+    badge: "→ SBUX",
+    badgeColor: "var(--accent)",
+  },
+  {
+    label: "You earn 0.002 shares",
+    detail: "SBUX @ ~$95 · your shares keep compounding",
+    badge: "📈",
+    badgeColor: "var(--gold)",
+  },
+];
+
+const WelcomePreview = () => {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) { clearInterval(intervalRef.current); return; }
+    setStep(0);
+    intervalRef.current = setInterval(() => {
+      setStep((s) => (s + 1) % WELCOME_PREVIEW_STEPS.length);
+    }, 2000);
+    return () => clearInterval(intervalRef.current);
+  }, [open]);
+
+  const s = WELCOME_PREVIEW_STEPS[step];
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", background: "none", border: "none",
+        cursor: "pointer", padding: "6px 0",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        color: "var(--text-3)", fontSize: 11.5, fontWeight: 600,
+      }}>
+        See how it works
+        {open ? <ChevronUp size={13} strokeWidth={2.2} /> : <ChevronDown size={13} strokeWidth={2.2} />}
+      </button>
+      <div style={{
+        overflow: "hidden",
+        maxHeight: open ? 120 : 0,
+        opacity: open ? 1 : 0,
+        transition: "max-height 0.3s ease, opacity 0.25s ease",
+      }}>
+        <div style={{
+          padding: "14px 16px", borderRadius: 14,
+          background: "var(--bg-1)", border: "1px solid var(--border-strong)",
+          display: "flex", alignItems: "center", gap: 14,
+        }}>
+          <div style={{
+            minWidth: 48, height: 48, borderRadius: 12,
+            background: "var(--bg-2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 800, color: s.badgeColor,
+            transition: "color 0.4s",
+            flexShrink: 0,
+          }}>
+            {s.badge}
+          </div>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <div style={{
+              fontSize: 13, fontWeight: 700, color: "var(--text-1)",
+              transition: "opacity 0.3s", marginBottom: 2,
+            }}>
+              {s.label}
+            </div>
+            <div style={{ fontSize: 10.5, color: "var(--text-3)", lineHeight: 1.4 }}>
+              {s.detail}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            {WELCOME_PREVIEW_STEPS.map((_, i) => (
+              <div key={i} style={{
+                width: i === step ? 14 : 5, height: 5, borderRadius: 999,
+                background: i === step ? "var(--accent)" : "var(--text-4)",
+                transition: "all 0.35s",
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ==================== WELCOME ====================
 // Google/Apple = simulated sign-in (demo pill). Continue without account = REAL empty app.
 // "Try in demo mode" = small text link below that seeds the full demo data.
@@ -1233,7 +1329,9 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           </div>
         </div>
 
-        <div style={{ marginTop: 18, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+        <WelcomePreview />
+
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <div style={{ display: "flex", gap: 5 }}>
             {Object.values(THEMES).map((t, i) => (
               <div key={i} style={{
@@ -2025,8 +2123,47 @@ const UploadOption = ({ icon: Icon, title, desc, onClick, demo }) => (
   </button>
 );
 
+// ==================== FIRST-TIME HOW IT WORKS ACCORDION ====================
+const FirstTimeHowItWorks = () => {
+  const [open, setOpen] = useState(false);
+  const steps = [
+    { icon: "💳", title: "Log a purchase", body: "Add any charge manually or upload a PDF statement — Stockback reads every line." },
+    { icon: "🤖", title: "AI matches the ticker", body: "Each merchant is mapped to a stock (Starbucks → SBUX, Amazon → AMZN, etc.)." },
+    { icon: "📈", title: "Flip into shares", body: "Your cashback amount buys fractional shares. Your rewards start earning returns." },
+  ];
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", background: "none", border: "none",
+        cursor: "pointer", padding: "10px 0",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        color: "var(--text-3)", fontSize: 11.5, fontWeight: 600,
+      }}>
+        How it works
+        {open ? <ChevronUp size={13} strokeWidth={2.2} /> : <ChevronDown size={13} strokeWidth={2.2} />}
+      </button>
+      {open && (
+        <div className="pop" style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 2 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{
+              display: "flex", gap: 12, alignItems: "flex-start",
+              padding: "12px 14px", background: "var(--bg-1)", borderRadius: 12,
+            }}>
+              <div style={{ fontSize: 18, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>{s.icon}</div>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", marginBottom: 2 }}>{s.title}</div>
+                <div style={{ fontSize: 11, color: "var(--text-3)", lineHeight: 1.5 }}>{s.body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==================== FLIP TAB ====================
-const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onOpenUpload, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker, statements }) => {
+const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onOpenUpload, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker, statements, isDemoMode }) => {
   const active = flips.filter((d) => !d.done);
   const done = flips.filter((d) => d.done);
   const totalCashback = active.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
@@ -2059,6 +2196,36 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
     }
     return streak;
   }, [statements]);
+
+  // Monthly summary: shown when ≥3 done flips exist
+  const monthlySummary = useMemo(() => {
+    if (done.length < 3) return null;
+    const now = new Date();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth(); // 0-based
+    const monthName = now.toLocaleDateString("en-US", { month: "long" });
+    // Try to filter to current calendar month via statementId or purchase dates
+    const thisMonthDone = done.filter((d) => {
+      if (d.statementId) {
+        const m = d.statementId.match(/stmt-(\d{4})-(\d{2})/);
+        if (m) return parseInt(m[1]) === nowYear && parseInt(m[2]) - 1 === nowMonth;
+      }
+      return d.purchases.some((p) => {
+        if (!p.date) return false;
+        const pd = new Date(p.date);
+        return !isNaN(pd.getTime()) && pd.getFullYear() === nowYear && pd.getMonth() === nowMonth;
+      });
+    });
+    const source = thisMonthDone.length > 0 ? thisMonthDone : done;
+    const label = thisMonthDone.length > 0 ? monthName : "All flips";
+    const totalAmt = source.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
+    const uniqueTickers = [...new Set(source.map((d) => d.ticker))];
+    const purchaseCount = source.reduce((a, b) => a + b.purchases.length, 0);
+    const byTicker = {};
+    source.forEach((d) => { byTicker[d.ticker] = (byTicker[d.ticker] || 0) + cashbackFor(d, cardsMap); });
+    const topTicker = Object.entries(byTicker).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    return { label, totalAmt, uniqueTickers, purchaseCount, topTicker };
+  }, [done, cardsMap]);
 
   const selectAll = () => setFlips((arr) => arr.map((d) => (!d.done && active.find((a) => a.id === d.id)) ? { ...d, flipped: true } : d));
   const deselectAll = () => setFlips((arr) => arr.map((d) => (!d.done) ? { ...d, flipped: false } : d));
@@ -2339,6 +2506,46 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
         )}
       </div>
 
+      {monthlySummary && (
+        <div style={{
+          margin: "0 22px 14px", padding: "14px 16px",
+          borderRadius: 16, background: "var(--bg-1)",
+          border: "1px solid var(--border-strong)",
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-3)", marginBottom: 10 }}>
+            This month · {monthlySummary.label}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1, padding: "10px 12px", background: "var(--bg-0)", borderRadius: 10, textAlign: "center" }}>
+              <div className="sb-num" style={{ fontSize: 17, fontWeight: 700, color: "var(--green)", letterSpacing: "-0.02em" }}>
+                ${monthlySummary.totalAmt.toFixed(2)}
+              </div>
+              <div style={{ fontSize: 9.5, color: "var(--text-3)", marginTop: 2 }}>flipped</div>
+            </div>
+            <div style={{ flex: 1, padding: "10px 12px", background: "var(--bg-0)", borderRadius: 10, textAlign: "center" }}>
+              <div className="sb-num" style={{ fontSize: 17, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+                {monthlySummary.uniqueTickers.length}
+              </div>
+              <div style={{ fontSize: 9.5, color: "var(--text-3)", marginTop: 2 }}>stock{monthlySummary.uniqueTickers.length !== 1 ? "s" : ""}</div>
+            </div>
+            {monthlySummary.topTicker && (
+              <div style={{ flex: 1, padding: "10px 12px", background: "var(--bg-0)", borderRadius: 10, textAlign: "center" }}>
+                <div className="sb-num" style={{ fontSize: 14, fontWeight: 700, color: "var(--accent-light)", letterSpacing: "-0.01em" }}>
+                  {monthlySummary.topTicker}
+                </div>
+                <div style={{ fontSize: 9.5, color: "var(--text-3)", marginTop: 2 }}>top pick</div>
+              </div>
+            )}
+            <div style={{ flex: 1, padding: "10px 12px", background: "var(--bg-0)", borderRadius: 10, textAlign: "center" }}>
+              <div className="sb-num" style={{ fontSize: 17, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+                {monthlySummary.purchaseCount}
+              </div>
+              <div style={{ fontSize: 9.5, color: "var(--text-3)", marginTop: 2 }}>purchase{monthlySummary.purchaseCount !== 1 ? "s" : ""}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {unassigned.length > 0 && (
         <UnassignedSection items={unassigned} cardsMap={cardsMap}
           onResolve={async (item, ticker) => {
@@ -2424,7 +2631,68 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
         </div>
       )}
 
-      {empty && (
+      {empty && !isDemoMode && (
+        <div style={{ margin: "4px 22px 24px" }}>
+          <div style={{
+            padding: "28px 22px 22px",
+            borderRadius: 20, background: "var(--bg-1)",
+            border: "1px solid var(--border-strong)",
+            textAlign: "center",
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 10 }}>💸</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.02em", marginBottom: 6 }}>
+              Ready for your first flip?
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 20, maxWidth: 260, margin: "0 auto 20px" }}>
+              Log a purchase you made or upload a credit card statement — Stockback will match each charge to a stock ticker.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button onClick={onOpenManualAdd} style={{
+                width: "100%", padding: "14px 16px", borderRadius: 14,
+                background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
+                border: "none", cursor: "pointer", color: "#fff",
+                display: "flex", alignItems: "center", gap: 12,
+                textAlign: "left",
+              }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: "rgba(255,255,255,0.22)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <Plus size={17} color="#fff" strokeWidth={2.4} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Add your first flip</div>
+                  <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.8)", marginTop: 1 }}>Log a charge manually</div>
+                </div>
+                <ArrowRight size={15} color="rgba(255,255,255,0.8)" />
+              </button>
+              <button onClick={onOpenUpload} style={{
+                width: "100%", padding: "13px 16px", borderRadius: 14,
+                background: "var(--bg-0)", border: "1px solid var(--border-strong)",
+                cursor: "pointer", color: "var(--text-1)",
+                display: "flex", alignItems: "center", gap: 12,
+                textAlign: "left",
+              }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: "var(--bg-2)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <FileText size={16} color="var(--text-2)" strokeWidth={2.2} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)" }}>Upload a statement</div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import from a PDF</div>
+                </div>
+                <ArrowRight size={15} color="var(--text-3)" />
+              </button>
+            </div>
+          </div>
+          <FirstTimeHowItWorks />
+        </div>
+      )}
+      {empty && isDemoMode && (
         <div style={{
           margin: "10px 22px 24px", padding: "30px 20px",
           borderRadius: 16, background: "var(--bg-1)",
@@ -5691,6 +5959,7 @@ export default function Stockback() {
             portfolio={portfolio} setPortfolio={setPortfolio}
             connectedBrokers={connectedBrokers} broker={broker}
             statements={statements}
+            isDemoMode={isDemoMode}
             onOpenItem={openItem}
             onOpenManualAdd={() => setShowManualFlip(true)}
             onOpenUpload={() => setShowStatementUpload(true)}
