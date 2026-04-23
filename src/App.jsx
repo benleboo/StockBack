@@ -750,29 +750,25 @@ async function fetchYahooQuote(ticker) {
   const key = (ticker || "").toUpperCase().trim();
   if (!key) return null;
   if (_priceCache[key] !== undefined) return _priceCache[key];
-  const candidateUrls = [
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(key)}?interval=1d&range=1d`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(key)}?interval=1d&range=1d`,
-  ];
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url, { method: "GET" });
-      if (!res.ok) continue;
+  try {
+    const res = await fetch(`/api/yahoo?endpoint=chart&q=${encodeURIComponent(key)}`);
+    if (res.ok) {
       const data = await res.json();
       const result = data?.chart?.result?.[0];
       const meta = result?.meta;
-      if (!meta || typeof meta.regularMarketPrice !== "number") continue;
-      const out = {
-        ticker: key,
-        name: meta.longName || meta.shortName || key,
-        price: +meta.regularMarketPrice.toFixed(2),
-        prevClose: +(meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice).toFixed(2),
-        currency: meta.currency || "USD",
-      };
-      _priceCache[key] = out;
-      return out;
-    } catch (_) { /* keep trying */ }
-  }
+      if (meta && typeof meta.regularMarketPrice === "number") {
+        const out = {
+          ticker: key,
+          name: meta.longName || meta.shortName || key,
+          price: +meta.regularMarketPrice.toFixed(2),
+          prevClose: +(meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice).toFixed(2),
+          currency: meta.currency || "USD",
+        };
+        _priceCache[key] = out;
+        return out;
+      }
+    }
+  } catch (_) { /* fall through */ }
   _priceCache[key] = null;
   return null;
 }
@@ -787,21 +783,17 @@ async function resolveTicker(query) {
   const direct = await fetchYahooQuote(upper);
   if (direct) return direct;
   // Second: try Yahoo search-autocomplete to map a company name to a ticker.
-  const candidateUrls = [
-    `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=5&newsCount=0`,
-    `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=5&newsCount=0`,
-  ];
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
+  try {
+    const res = await fetch(`/api/yahoo?endpoint=search&q=${encodeURIComponent(q)}`);
+    if (res.ok) {
       const data = await res.json();
       const hit = (data?.quotes || []).find((h) => h?.symbol && (h.quoteType === "EQUITY" || h.quoteType === "ETF"));
-      if (!hit?.symbol) continue;
-      const resolved = await fetchYahooQuote(hit.symbol);
-      if (resolved) return resolved;
-    } catch (_) { /* keep trying */ }
-  }
+      if (hit?.symbol) {
+        const resolved = await fetchYahooQuote(hit.symbol);
+        if (resolved) return resolved;
+      }
+    }
+  } catch (_) { /* fall through */ }
   return null;
 }
 
