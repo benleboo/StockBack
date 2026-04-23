@@ -1328,7 +1328,7 @@ const StepHeader = ({ step, total, title, subtitle, onBack, onSkip, skipLabel })
 );
 
 // ==================== CARD VISUAL ====================
-const CardVisual = ({ card, showRewards = true, size = "full" }) => {
+const CardVisual = ({ card, size = "full" }) => {
   const style = card.brandStyle || { bg: "linear-gradient(135deg, #505a70 0%, #252d3d 100%)", logo: "", accent: "#d9b368" };
   const isCompact = size === "compact";
   return (
@@ -1368,22 +1368,6 @@ const CardVisual = ({ card, showRewards = true, size = "full" }) => {
           marginTop: 4, letterSpacing: "-0.02em",
         }}>{card.name}</div>
       </div>
-      {showRewards && card.rewards && card.rewards.length > 0 && !isCompact && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "8px 0 10px", maxWidth: "85%" }}>
-          {card.rewards.slice(0, 4).map((r, i) => (
-            <div key={i} style={{
-              padding: "4px 9px", borderRadius: 6,
-              background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)",
-              fontSize: 9.5, fontWeight: 500, color: style.accent || "white",
-              letterSpacing: "-0.01em",
-              display: "inline-flex", alignItems: "center", gap: 5,
-            }}>
-              <span className="sb-mono" style={{ fontWeight: 700 }}>{r.rate}%</span>
-              <span>{r.category.length > 18 ? r.category.slice(0, 16) + "…" : r.category}</span>
-            </div>
-          ))}
-        </div>
-      )}
       {/* Bottom-right area intentionally empty — was redundant with top-left issuer label */}
     </div>
   );
@@ -1963,7 +1947,6 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
               <b style={{ color: "var(--text-1)" }}>Photos are never saved.</b> After we read the statement, the photo is wiped.
             </div>
           </div>
-          {isDemoMode && <div style={{ marginTop: 2 }}><DemoPill tooltip="Permissions are requested via real browser APIs" /></div>}
         </div>
         <div style={{ padding: "12px 26px 22px", display: "flex", gap: 10, flexShrink: 0 }}>
           <button onClick={denyAll} style={{
@@ -1988,10 +1971,10 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
         subtitle="AI reads each line and maps it to a ticker. Ambiguous items go to an Unassigned queue you can resolve."
         onBack={onBack} onSkip={onSkip} skipLabel="Skip & browse" />
       <div className="soft-scroll" style={{ flex: 1, padding: "18px 26px", display: "flex", flexDirection: "column", gap: 10, overflow: "auto", minHeight: 0 }}>
-        <UploadOption icon={FileText} title="Upload a PDF" desc="Statement file from your bank or email" onClick={onNext} demo />
+        <UploadOption icon={FileText} title="Upload a PDF" desc="Statement file from your bank or email" onClick={onNext} />
         <UploadOption icon={Camera} title="Take a photo"
           desc={permissions.camera ? "Camera ready" : "Tap to request camera"}
-          onClick={handleCameraClick} demo />
+          onClick={handleCameraClick} />
         {cameraDenied && (
           <div style={{
             padding: "10px 12px", borderRadius: 10,
@@ -2072,7 +2055,7 @@ const UploadOption = ({ icon: Icon, title, desc, onClick, demo }) => (
 );
 
 // ==================== FLIP TAB ====================
-const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker }) => {
+const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenItem, onOpenManualAdd, onOpenUpload, onShowToast, userCards, portfolio, setPortfolio, connectedBrokers, broker }) => {
   const active = flips.filter((d) => !d.done);
   const done = flips.filter((d) => d.done);
   const totalCashback = active.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
@@ -2282,6 +2265,32 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Add manual flip</div>
             <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Log a charge without uploading a statement</div>
+          </div>
+          <ArrowRight size={14} color="var(--text-3)" />
+        </button>
+
+        <button onClick={onOpenUpload} style={{
+          marginTop: 8, width: "100%",
+          border: "1px solid var(--border-strong)",
+          background: "var(--bg-1)",
+          color: "var(--text-1)", padding: "11px 14px", borderRadius: 12,
+          cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 11,
+          textAlign: "left",
+          transition: "all 0.15s",
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10,
+            background: "var(--accent-soft)",
+            border: "1px solid var(--accent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <FileText size={16} color="var(--accent-light)" strokeWidth={2.4} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em" }}>Upload a statement</div>
+            <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 1 }}>Import transactions from a PDF</div>
           </div>
           <ArrowRight size={14} color="var(--text-3)" />
         </button>
@@ -3669,12 +3678,14 @@ const CardsTab = ({ userCards, setUserCards, flips, setFlips, merchantSpending, 
                     return (
                       <div key={i} style={{
                         padding: "5px 10px", borderRadius: 20,
-                        backgroundColor: accent + "18",
-                        border: `1px solid ${accent}30`,
+                        background: "var(--bg-1)",
+                        border: "1px solid var(--border)",
                         fontSize: 12, fontWeight: 600,
-                        color: accent,
+                        color: "var(--text-1)",
                         letterSpacing: "-0.01em",
+                        display: "flex", alignItems: "center", gap: 5,
                       }}>
+                        <div style={{ width: 7, height: 7, borderRadius: 999, background: accent, flexShrink: 0 }} />
                         {r.rate}% {r.category}
                       </div>
                     );
@@ -4148,8 +4159,8 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
                   Choose a method
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <UploadOption icon={FileText} title="Upload a PDF" desc="Statement file from your bank or email" onClick={() => startUpload("pdf")} demo />
-                  <UploadOption icon={Camera} title="Take a photo" desc="Works best on mobile" onClick={() => startUpload("camera")} demo />
+                  <UploadOption icon={FileText} title="Upload a PDF" desc="Statement file from your bank or email" onClick={() => startUpload("pdf")} />
+                  <UploadOption icon={Camera} title="Take a photo" desc="Works best on mobile" onClick={() => startUpload("camera")} />
                 </div>
               </>
             )}
@@ -5510,6 +5521,7 @@ export default function Stockback() {
             connectedBrokers={connectedBrokers} broker={broker}
             onOpenItem={openItem}
             onOpenManualAdd={() => setShowManualFlip(true)}
+            onOpenUpload={() => setShowUpload(true)}
             onShowToast={pushToast}
           />
         )}
