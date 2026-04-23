@@ -1539,12 +1539,18 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
 // ==================== BOTTOM SHEET + FORM HELPERS ====================
 // The BottomSheet now uses position: fixed with inset:0 and a constrained inner column,
 // so when opened from a full-width Settings panel it still displays correctly.
-const BottomSheet = ({ onClose, title, children, maxHeight = "90vh" }) => (
+const BottomSheet = ({ onClose, title, children, maxHeight = "90vh" }) => {
+  const downOnBackdrop = useRef(false);
+  return (
   <div style={{
     position: "fixed", inset: 0,
     background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)",
     zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center",
-  }} onClick={onClose}>
+  }}
+    onMouseDown={(e) => { downOnBackdrop.current = e.target === e.currentTarget; }}
+    onTouchStart={(e) => { downOnBackdrop.current = e.target === e.currentTarget; }}
+    onClick={(e) => { if (downOnBackdrop.current && e.target === e.currentTarget) onClose(); }}
+  >
     <div className="slide-up" onClick={(e) => e.stopPropagation()} style={{
       width: "100%", maxWidth: 420, maxHeight,
       background: "var(--bg-0)",
@@ -1570,7 +1576,8 @@ const BottomSheet = ({ onClose, title, children, maxHeight = "90vh" }) => (
       {children}
     </div>
   </div>
-);
+  );
+};
 
 // Centered dialog for alerts and short interactions (not bottom-anchored like BottomSheet)
 const CenteredModal = ({ onClose, children }) => (
@@ -3117,6 +3124,7 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
   const [resolving, setResolving] = useState(false);
   const merchantRef = useRef(merchant);
   useEffect(() => { merchantRef.current = merchant; }, [merchant]);
+  const justUsedMerchantSuggestion = useRef(false);
 
   // Merchant → ticker: hardcoded table first, then Yahoo search fallback (debounced 400ms)
   useEffect(() => {
@@ -3148,10 +3156,12 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
     return () => clearTimeout(timer);
   }, [merchant]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ticker → merchant name: auto-fill if merchant empty, suggest if it differs (debounced 400ms)
+  // Ticker → merchant name: auto-fill if merchant empty, suggest if it differs (debounced 400ms).
+  // Guard: if the user just clicked "Use" on a ticker suggestion, don't suggest back.
   useEffect(() => {
     const tkr = ticker.trim().toUpperCase();
     if (!/^[A-Z]{2,5}$/.test(tkr)) { setMerchantSuggestion(null); return; }
+    if (justUsedMerchantSuggestion.current) { justUsedMerchantSuggestion.current = false; return; }
     const timer = setTimeout(async () => {
       try {
         const result = await fetchYahooQuote(tkr);
@@ -3241,7 +3251,7 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
             <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
               Ticker: <b>{suggested.ticker}</b>{suggested.category ? ` (${suggested.category})` : suggested.name ? ` — ${suggested.name}` : ""}
             </div>
-            <button onClick={() => { setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
+            <button onClick={() => { justUsedMerchantSuggestion.current = true; setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
               padding: "4px 8px", borderRadius: 7, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
             }}>Use</button>
@@ -4231,7 +4241,6 @@ const SettingsTab = ({
           {supabaseUser && (
             <SettingsRow icon={User} label="Account" value={supabaseUser.email} onClick={() => setView("account")} />
           )}
-          <SettingsRow icon={Trash2} label="Delete" danger onClick={() => setView("delete")} />
           <div style={{ fontSize: 10, color: "var(--text-4)", textAlign: "center", marginTop: 20, padding: "0 20px", lineHeight: 1.5 }}>
             <b style={{ color: "var(--text-3)" }}>Stockback</b> — design concept. No real accounts or trades. All flows are illustrative.
           </div>
@@ -5114,11 +5123,15 @@ export default function Stockback() {
         setUserCards(dbCards);
         firstSyncAfterLoad.current = { flips: true, portfolio: true, cards: true };
         dbLoaded.current = true;
-        // Route based on freshly-loaded cards, not stale state
+        // Route based on freshly-loaded cards, not stale state.
+        // Never interrupt an in-progress onboarding flow (bug 2).
+        // Only reroute when coming from welcome or when forced onboarding (bug 1).
         setScreen((s) => {
-          if (dbCards.length === 0) return "cards"; // first-time user: show picker
-          if (s === "app") return "app";            // already in app: stay
-          return "app";                             // welcome / upload / etc: go to app
+          const onboarding = ["cards", "upload", "permissions"];
+          if (onboarding.includes(s)) return s;     // mid-onboarding: don't touch
+          if (dbCards.length === 0) return "cards"; // no cards ever: must onboard
+          if (s === "welcome") return "app";        // was on welcome: enter app
+          return s;                                 // already on app/settings/etc: stay
         });
       });
     };
