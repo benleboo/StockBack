@@ -266,75 +266,561 @@ const FontLoader = () => (
 );
 
 // ==================== CARD CATALOG ====================
+// Culled to ~38 cards: cashback-workable cards only.
+// Removed: business cards, airline co-brands, hotel co-brands, crypto, store-credit-only.
+// New fields: rewardCurrency, cashRate ($/pt as cash), bestRate (best realistic $/pt),
+//   bestUse (null when cashRate === bestRate), minRedemption ($), redemptionSteps (string[]).
 const CARD_CATALOG = [
-  { id: "amex-gold", issuer: "American Express", name: "Gold Card", shortName: "Amex Gold", popular: true, brandStyle: { bg: "linear-gradient(135deg, #d4af6a 0%, #b8924f 50%, #9e7a3e 100%)", logo: "AMEX", accent: "#fff8e7" }, defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Groceries", rate: 4 }, { category: "Flights", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "amex-plat", issuer: "American Express", name: "Platinum Card", shortName: "Amex Platinum", popular: true, brandStyle: { bg: "linear-gradient(135deg, #d8dce2 0%, #a8aeb9 50%, #7e8693 100%)", logo: "AMEX", accent: "#1a1d24" }, defaultRewards: [{ category: "Flights", rate: 5 }, { category: "Hotels", rate: 5 }, { category: "Everything else", rate: 1 }] },
-  { id: "amex-green", issuer: "American Express", name: "Green Card", shortName: "Amex Green", brandStyle: { bg: "linear-gradient(135deg, #2d5c3e 0%, #1f4329 50%, #122c18 100%)", logo: "AMEX", accent: "#fff" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Transit", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "amex-blue", issuer: "American Express", name: "Blue Cash Preferred", shortName: "Amex Blue Cash Preferred", brandStyle: { bg: "linear-gradient(135deg, #2c5fa3 0%, #1e4480 50%, #132d57 100%)", logo: "AMEX", accent: "#e8f1ff" }, defaultRewards: [{ category: "Groceries", rate: 6 }, { category: "Streaming", rate: 6 }, { category: "Gas", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "amex-blue-everyday", issuer: "American Express", name: "Blue Cash Everyday", shortName: "Amex Blue Cash Everyday", brandStyle: { bg: "linear-gradient(135deg, #5a85c2 0%, #3a669e 50%, #24497c 100%)", logo: "AMEX", accent: "#fff" }, defaultRewards: [{ category: "Groceries", rate: 3 }, { category: "Gas", rate: 3 }, { category: "Shopping", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "amex-cash-mag", issuer: "American Express", name: "Cash Magnet", shortName: "Amex Cash Magnet", brandStyle: { bg: "linear-gradient(135deg, #40566e 0%, #2c3d50 50%, #1c2938 100%)", logo: "AMEX", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "amex-biz-gold", issuer: "American Express", name: "Business Gold", shortName: "Amex Business Gold", brandStyle: { bg: "linear-gradient(135deg, #c4a456 0%, #a88943 50%, #826a31 100%)", logo: "AMEX", accent: "#fff" }, defaultRewards: [{ category: "Top category", rate: 4 }, { category: "Everything else", rate: 1 }] },
-  { id: "delta-gold", issuer: "American Express", name: "Delta SkyMiles Gold", shortName: "Delta SkyMiles Gold", brandStyle: { bg: "linear-gradient(135deg, #e3ab4a 0%, #ba8528 50%, #8e6315 100%)", logo: "DELTA", accent: "#fff" }, defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "delta-plat", issuer: "American Express", name: "Delta SkyMiles Platinum", shortName: "Delta SkyMiles Platinum", brandStyle: { bg: "linear-gradient(135deg, #b8b8c0 0%, #909098 50%, #686870 100%)", logo: "DELTA", accent: "#fff" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Hotels", rate: 3 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "hilton-honors", issuer: "American Express", name: "Hilton Honors", shortName: "Hilton Honors Amex", brandStyle: { bg: "linear-gradient(135deg, #1d4a85 0%, #13335e 50%, #0b2040 100%)", logo: "HILTON", accent: "#fff" }, defaultRewards: [{ category: "Hotels", rate: 7 }, { category: "Dining", rate: 5 }, { category: "Everything else", rate: 3 }] },
-  { id: "hilton-aspire", issuer: "American Express", name: "Hilton Honors Aspire", shortName: "Hilton Aspire", brandStyle: { bg: "linear-gradient(135deg, #0a1f3f 0%, #051226 50%, #000812 100%)", logo: "HILTON", accent: "#d4a86a" }, defaultRewards: [{ category: "Hotels", rate: 14 }, { category: "Flights", rate: 7 }, { category: "Everything else", rate: 3 }] },
-  { id: "marriott-brilliant", issuer: "American Express", name: "Marriott Bonvoy Brilliant", shortName: "Marriott Brilliant Amex", brandStyle: { bg: "linear-gradient(135deg, #3a2a1a 0%, #26180c 50%, #150a04 100%)", logo: "MARRIOTT", accent: "#d4a86a" }, defaultRewards: [{ category: "Hotels", rate: 6 }, { category: "Dining", rate: 3 }, { category: "Flights", rate: 3 }, { category: "Everything else", rate: 2 }] },
-  { id: "chase-sapphire-p", issuer: "Chase", name: "Sapphire Preferred", shortName: "Chase Sapphire Preferred", popular: true, brandStyle: { bg: "linear-gradient(135deg, #1e4080 0%, #152d5c 50%, #0a1a3c 100%)", logo: "CHASE", accent: "#d4e4ff" }, defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Travel", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "chase-sapphire-r", issuer: "Chase", name: "Sapphire Reserve", shortName: "Chase Sapphire Reserve", brandStyle: { bg: "linear-gradient(135deg, #0f1f3c 0%, #081329 50%, #020818 100%)", logo: "CHASE", accent: "#d4a86a" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "chase-freedom-u", issuer: "Chase", name: "Freedom Unlimited", shortName: "Chase Freedom Unlimited", popular: true, brandStyle: { bg: "linear-gradient(135deg, #2e6fb8 0%, #1f568f 50%, #143d66 100%)", logo: "CHASE", accent: "#fff" }, defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Shopping", rate: 3 }, { category: "Everything else", rate: 1.5 }] },
-  { id: "chase-freedom-f", issuer: "Chase", name: "Freedom Flex", shortName: "Chase Freedom Flex", brandStyle: { bg: "linear-gradient(135deg, #4080c9 0%, #2e6fb8 50%, #1f568f 100%)", logo: "CHASE", accent: "#fff" }, defaultRewards: [{ category: "Rotating", rate: 5 }, { category: "Dining", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "chase-freedom-rise", issuer: "Chase", name: "Freedom Rise", shortName: "Chase Freedom Rise", brandStyle: { bg: "linear-gradient(135deg, #5a90cc 0%, #3d7ab8 50%, #2a639a 100%)", logo: "CHASE", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "chase-ink-cash", issuer: "Chase", name: "Ink Business Cash", shortName: "Chase Ink Business Cash", brandStyle: { bg: "linear-gradient(135deg, #17579c 0%, #0f3e73 50%, #082848 100%)", logo: "CHASE INK", accent: "#fff" }, defaultRewards: [{ category: "Office", rate: 5 }, { category: "Internet", rate: 5 }, { category: "Gas", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "chase-ink-pref", issuer: "Chase", name: "Ink Business Preferred", shortName: "Chase Ink Preferred", brandStyle: { bg: "linear-gradient(135deg, #0d2b52 0%, #081c38 50%, #03101f 100%)", logo: "CHASE INK", accent: "#d4a86a" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Shipping", rate: 3 }, { category: "Internet", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "united-explorer", issuer: "Chase", name: "United Explorer", shortName: "United Explorer", brandStyle: { bg: "linear-gradient(135deg, #002244 0%, #001630 50%, #000814 100%)", logo: "UNITED", accent: "#b0b8c4" }, defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Hotels", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "united-quest", issuer: "Chase", name: "United Quest", shortName: "United Quest", brandStyle: { bg: "linear-gradient(135deg, #1b3a5a 0%, #0f2640 50%, #061628 100%)", logo: "UNITED", accent: "#e6f0ff" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 2 }, { category: "Streaming", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "southwest-rr", issuer: "Chase", name: "Southwest Rapid Rewards Plus", shortName: "Southwest Rapid Rewards", brandStyle: { bg: "linear-gradient(135deg, #304cb2 0%, #1e3380 50%, #122056 100%)", logo: "SOUTHWEST", accent: "#ffbf27" }, defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Transit", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "marriott-bonvoy", issuer: "Chase", name: "Marriott Bonvoy Boundless", shortName: "Marriott Bonvoy", brandStyle: { bg: "linear-gradient(135deg, #8a1a2c 0%, #600f1c 50%, #3d0812 100%)", logo: "MARRIOTT", accent: "#fff" }, defaultRewards: [{ category: "Hotels", rate: 6 }, { category: "Everything else", rate: 2 }] },
-  { id: "ihg-premier", issuer: "Chase", name: "IHG Premier", shortName: "IHG Premier", brandStyle: { bg: "linear-gradient(135deg, #004d7a 0%, #003858 50%, #00243a 100%)", logo: "IHG", accent: "#fff" }, defaultRewards: [{ category: "Hotels", rate: 10 }, { category: "Dining", rate: 4 }, { category: "Travel", rate: 3 }, { category: "Everything else", rate: 2 }] },
-  { id: "amazon-prime", issuer: "Chase", name: "Amazon Prime Visa", shortName: "Amazon Prime Visa", brandStyle: { bg: "linear-gradient(135deg, #232f3e 0%, #131a24 50%, #07090e 100%)", logo: "AMAZON", accent: "#ff9900" }, defaultRewards: [{ category: "Shopping", rate: 5 }, { category: "Dining", rate: 2 }, { category: "Gas", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "citi-double", issuer: "Citi", name: "Double Cash", shortName: "Citi Double Cash", popular: true, brandStyle: { bg: "linear-gradient(135deg, #b23a3a 0%, #8f2a2a 50%, #6a1c1c 100%)", logo: "CITI", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
-  { id: "citi-custom", issuer: "Citi", name: "Custom Cash", shortName: "Citi Custom Cash", brandStyle: { bg: "linear-gradient(135deg, #942828 0%, #6b1c1c 50%, #471212 100%)", logo: "CITI", accent: "#fff" }, defaultRewards: [{ category: "Top spending", rate: 5 }, { category: "Everything else", rate: 1 }] },
-  { id: "citi-premier", issuer: "Citi", name: "Premier", shortName: "Citi Premier", brandStyle: { bg: "linear-gradient(135deg, #1a2842 0%, #0f1a30 50%, #060c1c 100%)", logo: "CITI", accent: "#d4a86a" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "citi-strata", issuer: "Citi", name: "Strata Premier", shortName: "Citi Strata Premier", brandStyle: { bg: "linear-gradient(135deg, #192642 0%, #0d1728 50%, #040914 100%)", logo: "CITI", accent: "#c8d4e8" }, defaultRewards: [{ category: "Hotels", rate: 10 }, { category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "aa-aviator", issuer: "Citi", name: "AAdvantage Aviator Red", shortName: "American Airlines Aviator", brandStyle: { bg: "linear-gradient(135deg, #3a3f48 0%, #25292f 50%, #14171c 100%)", logo: "AA", accent: "#d4d9e0" }, defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "aa-executive", issuer: "Citi", name: "AAdvantage Executive", shortName: "AA Executive", brandStyle: { bg: "linear-gradient(135deg, #1f232a 0%, #13171d 50%, #080b10 100%)", logo: "AA", accent: "#c4c9d0" }, defaultRewards: [{ category: "Travel", rate: 4 }, { category: "Hotels", rate: 10 }, { category: "Everything else", rate: 1 }] },
-  { id: "costco-anywhere", issuer: "Citi", name: "Costco Anywhere Visa", shortName: "Costco Anywhere Visa", brandStyle: { bg: "linear-gradient(135deg, #e31837 0%, #b01128 50%, #7d0b1c 100%)", logo: "COSTCO", accent: "#fff" }, defaultRewards: [{ category: "Gas", rate: 4 }, { category: "Dining", rate: 3 }, { category: "Travel", rate: 3 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "bestbuy", issuer: "Citi", name: "Best Buy Visa", shortName: "Best Buy Credit Card", brandStyle: { bg: "linear-gradient(135deg, #003b64 0%, #002847 50%, #00172a 100%)", logo: "BEST BUY", accent: "#fff200" }, defaultRewards: [{ category: "Shopping", rate: 5 }, { category: "Gas", rate: 3 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "discover-it", issuer: "Discover", name: "it Cash Back", shortName: "Discover it Cash Back", popular: true, brandStyle: { bg: "linear-gradient(135deg, #e08a3e 0%, #c07028 50%, #9a5720 100%)", logo: "DISCOVER", accent: "#fff" }, defaultRewards: [{ category: "Rotating", rate: 5 }, { category: "Everything else", rate: 1 }] },
-  { id: "discover-miles", issuer: "Discover", name: "it Miles", shortName: "Discover it Miles", brandStyle: { bg: "linear-gradient(135deg, #5a6a7e 0%, #3d4a5c 50%, #26303e 100%)", logo: "DISCOVER", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "discover-chrome", issuer: "Discover", name: "it Chrome", shortName: "Discover it Chrome", brandStyle: { bg: "linear-gradient(135deg, #a8afb9 0%, #888f9a 50%, #656c78 100%)", logo: "DISCOVER", accent: "#fff" }, defaultRewards: [{ category: "Gas", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "capital-venture", issuer: "Capital One", name: "Venture", shortName: "Capital One Venture", brandStyle: { bg: "linear-gradient(135deg, #6b7a92 0%, #4d5a72 50%, #323d52 100%)", logo: "CAPITAL ONE", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
-  { id: "capital-venture-x", issuer: "Capital One", name: "Venture X", shortName: "Capital One Venture X", brandStyle: { bg: "linear-gradient(135deg, #3a4a63 0%, #2a3649 50%, #1b2434 100%)", logo: "CAPITAL ONE", accent: "#d9b368" }, defaultRewards: [{ category: "Travel", rate: 10 }, { category: "Dining", rate: 5 }, { category: "Everything else", rate: 2 }] },
-  { id: "capital-savor", issuer: "Capital One", name: "Savor", shortName: "Capital One Savor", brandStyle: { bg: "linear-gradient(135deg, #a02d4e 0%, #7a2038 50%, #561624 100%)", logo: "CAPITAL ONE", accent: "#fff" }, defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Entertainment", rate: 4 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "capital-savorone", issuer: "Capital One", name: "SavorOne", shortName: "Capital One SavorOne", brandStyle: { bg: "linear-gradient(135deg, #b0385a 0%, #8a2a46 50%, #631c32 100%)", logo: "CAPITAL ONE", accent: "#fff" }, defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Entertainment", rate: 3 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "capital-quicksilver", issuer: "Capital One", name: "Quicksilver", shortName: "Capital One Quicksilver", brandStyle: { bg: "linear-gradient(135deg, #9ea6b5 0%, #747c8c 50%, #4d5564 100%)", logo: "CAPITAL ONE", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "capital-spark", issuer: "Capital One", name: "Spark Cash Plus", shortName: "Capital One Spark Cash", brandStyle: { bg: "linear-gradient(135deg, #5c6a80 0%, #3f4d63 50%, #26334a 100%)", logo: "CAPITAL ONE", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
-  { id: "walmart-mc", issuer: "Capital One", name: "Walmart Rewards Mastercard", shortName: "Walmart Rewards", brandStyle: { bg: "linear-gradient(135deg, #0071ce 0%, #005399 50%, #003766 100%)", logo: "WALMART", accent: "#ffc220" }, defaultRewards: [{ category: "Shopping", rate: 5 }, { category: "Dining", rate: 2 }, { category: "Travel", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "wells-active", issuer: "Wells Fargo", name: "Active Cash", shortName: "Wells Fargo Active Cash", brandStyle: { bg: "linear-gradient(135deg, #c41e2e 0%, #9a1725 50%, #6e101a 100%)", logo: "WELLS FARGO", accent: "#f7d878" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
-  { id: "wells-autograph", issuer: "Wells Fargo", name: "Autograph", shortName: "Wells Fargo Autograph", brandStyle: { bg: "linear-gradient(135deg, #8a1823 0%, #62111b 50%, #3d0a11 100%)", logo: "WELLS FARGO", accent: "#f7d878" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Gas", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "wells-attune", issuer: "Wells Fargo", name: "Attune", shortName: "Wells Fargo Attune", brandStyle: { bg: "linear-gradient(135deg, #b02c37 0%, #8a202a 50%, #63151d 100%)", logo: "WELLS FARGO", accent: "#fff" }, defaultRewards: [{ category: "Entertainment", rate: 4 }, { category: "Dining", rate: 4 }, { category: "Everything else", rate: 1 }] },
-  { id: "bilt", issuer: "Wells Fargo", name: "Bilt Mastercard", shortName: "Bilt Rewards", brandStyle: { bg: "linear-gradient(135deg, #1e1e1e 0%, #0e0e0e 50%, #000 100%)", logo: "BILT", accent: "#fff" }, defaultRewards: [{ category: "Rent", rate: 1 }, { category: "Dining", rate: 3 }, { category: "Travel", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "boa-customized", issuer: "Bank of America", name: "Customized Cash Rewards", shortName: "BoA Customized Cash", brandStyle: { bg: "linear-gradient(135deg, #be2e3a 0%, #941f28 50%, #6a141a 100%)", logo: "BANK OF AMERICA", accent: "#fff" }, defaultRewards: [{ category: "Choice", rate: 3 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "boa-travel", issuer: "Bank of America", name: "Travel Rewards", shortName: "BoA Travel Rewards", brandStyle: { bg: "linear-gradient(135deg, #8c2029 0%, #62151c 50%, #3d0c11 100%)", logo: "BANK OF AMERICA", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "boa-premium", issuer: "Bank of America", name: "Premium Rewards", shortName: "BoA Premium Rewards", brandStyle: { bg: "linear-gradient(135deg, #5c1015 0%, #3d0a0e 50%, #1f0607 100%)", logo: "BANK OF AMERICA", accent: "#d4a86a" }, defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1.5 }] },
-  { id: "boa-unlimited", issuer: "Bank of America", name: "Unlimited Cash Rewards", shortName: "BoA Unlimited Cash", brandStyle: { bg: "linear-gradient(135deg, #a82632 0%, #801b25 50%, #551118 100%)", logo: "BANK OF AMERICA", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 1.5 }] },
-  { id: "usbank-alt", issuer: "U.S. Bank", name: "Altitude Go", shortName: "US Bank Altitude Go", brandStyle: { bg: "linear-gradient(135deg, #1f4b8f 0%, #163866 50%, #0d2545 100%)", logo: "U.S. BANK", accent: "#fff" }, defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Groceries", rate: 2 }, { category: "Gas", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "usbank-reserve", issuer: "U.S. Bank", name: "Altitude Reserve", shortName: "US Bank Altitude Reserve", brandStyle: { bg: "linear-gradient(135deg, #0e2448 0%, #081734 50%, #030a1d 100%)", logo: "U.S. BANK", accent: "#d4a86a" }, defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Mobile wallet", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "usbank-cash-plus", issuer: "U.S. Bank", name: "Cash+ Visa", shortName: "US Bank Cash+", brandStyle: { bg: "linear-gradient(135deg, #2a5d9e 0%, #1d4477 50%, #11304f 100%)", logo: "U.S. BANK", accent: "#fff" }, defaultRewards: [{ category: "Choice", rate: 5 }, { category: "Choice 2", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "apple-card", issuer: "Apple", name: "Apple Card", shortName: "Apple Card", popular: true, brandStyle: { bg: "linear-gradient(135deg, #e8e9ec 0%, #c4c7cf 50%, #9ea2ad 100%)", logo: "", accent: "#1a1d24" }, defaultRewards: [{ category: "Shopping", rate: 3 }, { category: "Apple Pay", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "robinhood-gold", issuer: "Robinhood", name: "Gold Card", shortName: "Robinhood Gold Card", brandStyle: { bg: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #000 100%)", logo: "ROBINHOOD", accent: "#c2f570" }, defaultRewards: [{ category: "Everything", rate: 3 }] },
-  { id: "sofi-credit", issuer: "SoFi", name: "Credit Card", shortName: "SoFi Credit Card", brandStyle: { bg: "linear-gradient(135deg, #0c1a2e 0%, #081122 50%, #030811 100%)", logo: "SOFI", accent: "#14e7d1" }, defaultRewards: [{ category: "Everything", rate: 2.2 }] },
-  { id: "venmo-card", issuer: "Venmo", name: "Venmo Credit Card", shortName: "Venmo Credit Card", brandStyle: { bg: "linear-gradient(135deg, #008cff 0%, #006ccc 50%, #004f99 100%)", logo: "VENMO", accent: "#fff" }, defaultRewards: [{ category: "Top category", rate: 3 }, { category: "Second", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "paypal-cashback", issuer: "PayPal", name: "Cashback Mastercard", shortName: "PayPal Cashback", brandStyle: { bg: "linear-gradient(135deg, #003087 0%, #001f5c 50%, #00113a 100%)", logo: "PAYPAL", accent: "#009cde" }, defaultRewards: [{ category: "PayPal", rate: 3 }, { category: "Everything else", rate: 2 }] },
-  { id: "fidelity-rewards", issuer: "Fidelity", name: "Rewards Visa", shortName: "Fidelity Rewards Visa", brandStyle: { bg: "linear-gradient(135deg, #0e5a2c 0%, #074020 50%, #032914 100%)", logo: "FIDELITY", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
-  { id: "cashapp-card", issuer: "Cash App", name: "Cash Card", shortName: "Cash App Card", brandStyle: { bg: "linear-gradient(135deg, #00d632 0%, #009825 50%, #006818 100%)", logo: "CASH APP", accent: "#000" }, defaultRewards: [{ category: "Boosts", rate: 10 }, { category: "Everything else", rate: 0 }] },
-  { id: "coinbase-card", issuer: "Coinbase", name: "Coinbase Card", shortName: "Coinbase Card", brandStyle: { bg: "linear-gradient(135deg, #0052ff 0%, #003ccc 50%, #002799 100%)", logo: "COINBASE", accent: "#fff" }, defaultRewards: [{ category: "Crypto rewards", rate: 4 }, { category: "Everything else", rate: 1 }] },
-  { id: "target-redcard", issuer: "TD Bank", name: "Target RedCard", shortName: "Target RedCard", brandStyle: { bg: "linear-gradient(135deg, #cc0000 0%, #990000 50%, #660000 100%)", logo: "TARGET", accent: "#fff" }, defaultRewards: [{ category: "Shopping", rate: 5 }] },
-  { id: "uber-visa", issuer: "Barclays", name: "Uber Visa", shortName: "Uber Credit Card", brandStyle: { bg: "linear-gradient(135deg, #000 0%, #0a0a0a 50%, #1a1a1a 100%)", logo: "UBER", accent: "#fff" }, defaultRewards: [{ category: "Travel", rate: 5 }, { category: "Dining", rate: 3 }, { category: "Hotels", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "jetblue-plus", issuer: "Barclays", name: "JetBlue Plus", shortName: "JetBlue Plus", brandStyle: { bg: "linear-gradient(135deg, #0f3a66 0%, #0a2848 50%, #051830 100%)", logo: "JETBLUE", accent: "#fff" }, defaultRewards: [{ category: "Travel", rate: 6 }, { category: "Dining", rate: 2 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "aaa-daily", issuer: "Comenity", name: "AAA Daily Advantage", shortName: "AAA Daily Advantage", brandStyle: { bg: "linear-gradient(135deg, #c0142f 0%, #9a0e26 50%, #6a091c 100%)", logo: "AAA", accent: "#fff" }, defaultRewards: [{ category: "Groceries", rate: 5 }, { category: "Gas", rate: 3 }, { category: "Everything else", rate: 1 }] },
-  { id: "pnc-cash", issuer: "PNC", name: "Cash Rewards Visa", shortName: "PNC Cash Rewards", brandStyle: { bg: "linear-gradient(135deg, #ff6600 0%, #cc5200 50%, #993d00 100%)", logo: "PNC", accent: "#fff" }, defaultRewards: [{ category: "Gas", rate: 4 }, { category: "Dining", rate: 3 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }] },
-  { id: "synchrony-premier", issuer: "Synchrony", name: "Premier World", shortName: "Synchrony Premier", brandStyle: { bg: "linear-gradient(135deg, #7a2e3f 0%, #5a2030 50%, #3a1420 100%)", logo: "SYNCHRONY", accent: "#fff" }, defaultRewards: [{ category: "Everything", rate: 2 }] },
+  {
+    id: "amex-gold", issuer: "American Express", name: "Gold Card", shortName: "Amex Gold", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #d4af6a 0%, #b8924f 50%, #9e7a3e 100%)", logo: "AMEX", accent: "#fff8e7" },
+    defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Groceries", rate: 4 }, { category: "Flights", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Membership Rewards", cashRate: 0.006, bestRate: 0.02,
+    bestUse: "Transfer to ANA, Delta, or British Airways — typically 1.5–2¢/pt on business/first awards",
+    minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Use Points",
+      "Select 'Deposit to checking/savings account' at 0.6¢/pt",
+      "Enter your bank account details and submit",
+      "Wait 1–3 business days for the deposit to arrive",
+      "Confirm funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amex-plat", issuer: "American Express", name: "Platinum Card", shortName: "Amex Platinum", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #d8dce2 0%, #a8aeb9 50%, #7e8693 100%)", logo: "AMEX", accent: "#1a1d24" },
+    defaultRewards: [{ category: "Flights", rate: 5 }, { category: "Hotels", rate: 5 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Membership Rewards", cashRate: 0.006, bestRate: 0.02,
+    bestUse: "Transfer to ANA, Delta, or British Airways for 1.5–2¢/pt; or Schwab Invest with Rewards for 1.1¢/pt",
+    minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Use Points",
+      "Select 'Deposit to checking/savings account' at 0.6¢/pt",
+      "Enter your bank account details and submit",
+      "Wait 1–3 business days for the deposit to arrive",
+      "Confirm funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amex-green", issuer: "American Express", name: "Green Card", shortName: "Amex Green",
+    brandStyle: { bg: "linear-gradient(135deg, #2d5c3e 0%, #1f4329 50%, #122c18 100%)", logo: "AMEX", accent: "#fff" },
+    defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Transit", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Membership Rewards", cashRate: 0.006, bestRate: 0.02,
+    bestUse: "Transfer to ANA, Delta, or British Airways — typically 1.5–2¢/pt on business/first awards",
+    minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Use Points",
+      "Select 'Deposit to checking/savings account' at 0.6¢/pt",
+      "Enter your bank account details and submit",
+      "Wait 1–3 business days for the deposit to arrive",
+      "Confirm funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amex-blue", issuer: "American Express", name: "Blue Cash Preferred", shortName: "Amex Blue Cash Preferred",
+    brandStyle: { bg: "linear-gradient(135deg, #2c5fa3 0%, #1e4480 50%, #132d57 100%)", logo: "AMEX", accent: "#e8f1ff" },
+    defaultRewards: [{ category: "Groceries", rate: 6 }, { category: "Streaming", rate: 6 }, { category: "Gas", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Redeem Cash Back",
+      "Select 'Apply to statement' (minimum $25)",
+      "Wait 1–2 business days for the credit to post",
+      "Pay your Amex bill from your linked bank account",
+      "The statement credit frees up equivalent cash in your bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amex-blue-everyday", issuer: "American Express", name: "Blue Cash Everyday", shortName: "Amex Blue Cash Everyday",
+    brandStyle: { bg: "linear-gradient(135deg, #5a85c2 0%, #3a669e 50%, #24497c 100%)", logo: "AMEX", accent: "#fff" },
+    defaultRewards: [{ category: "Groceries", rate: 3 }, { category: "Gas", rate: 3 }, { category: "Shopping", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Redeem Cash Back",
+      "Select 'Apply to statement' (minimum $25)",
+      "Wait 1–2 business days for the credit to post",
+      "Pay your Amex bill from your linked bank account",
+      "The statement credit frees up equivalent cash in your bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amex-cash-mag", issuer: "American Express", name: "Cash Magnet", shortName: "Amex Cash Magnet",
+    brandStyle: { bg: "linear-gradient(135deg, #40566e 0%, #2c3d50 50%, #1c2938 100%)", logo: "AMEX", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 25,
+    redemptionSteps: [
+      "Log in to americanexpress.com → Rewards → Redeem Cash Back",
+      "Select 'Apply to statement' (minimum $25)",
+      "Wait 1–2 business days for the credit to post",
+      "Pay your Amex bill from your linked bank account",
+      "The statement credit frees up equivalent cash in your bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "chase-sapphire-p", issuer: "Chase", name: "Sapphire Preferred", shortName: "Chase Sapphire Preferred", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #1e4080 0%, #152d5c 50%, #0a1a3c 100%)", logo: "CHASE", accent: "#d4e4ff" },
+    defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Travel", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.0125,
+    bestUse: "Book via Chase Travel portal at 1.25¢/pt, or transfer to Hyatt/United",
+    minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "chase-sapphire-r", issuer: "Chase", name: "Sapphire Reserve", shortName: "Chase Sapphire Reserve",
+    brandStyle: { bg: "linear-gradient(135deg, #0f1f3c 0%, #081329 50%, #020818 100%)", logo: "CHASE", accent: "#d4a86a" },
+    defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.015,
+    bestUse: "Book via Chase portal at 1.5¢/pt, or transfer to United, Hyatt, or Air Canada for 2¢+/pt",
+    minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "chase-freedom-u", issuer: "Chase", name: "Freedom Unlimited", shortName: "Chase Freedom Unlimited", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #2e6fb8 0%, #1f568f 50%, #143d66 100%)", logo: "CHASE", accent: "#fff" },
+    defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Shopping", rate: 3 }, { category: "Everything else", rate: 1.5 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "chase-freedom-f", issuer: "Chase", name: "Freedom Flex", shortName: "Chase Freedom Flex",
+    brandStyle: { bg: "linear-gradient(135deg, #4080c9 0%, #2e6fb8 50%, #1f568f 100%)", logo: "CHASE", accent: "#fff" },
+    defaultRewards: [{ category: "Rotating", rate: 5 }, { category: "Dining", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "chase-freedom-rise", issuer: "Chase", name: "Freedom Rise", shortName: "Chase Freedom Rise",
+    brandStyle: { bg: "linear-gradient(135deg, #5a90cc 0%, #3d7ab8 50%, #2a639a 100%)", logo: "CHASE", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "amazon-prime", issuer: "Chase", name: "Amazon Prime Visa", shortName: "Amazon Prime Visa",
+    brandStyle: { bg: "linear-gradient(135deg, #232f3e 0%, #131a24 50%, #07090e 100%)", logo: "AMAZON", accent: "#ff9900" },
+    defaultRewards: [{ category: "Shopping", rate: 5 }, { category: "Dining", rate: 2 }, { category: "Gas", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Ultimate Rewards", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 20,
+    redemptionSteps: [
+      "Log in to chase.com → Ultimate Rewards → Use Points",
+      "Select 'Cash Back' → 'Deposit to a bank account' at 1¢/pt",
+      "Choose your linked bank account and confirm",
+      "Wait 1–2 business days for the deposit to process",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "citi-double", issuer: "Citi", name: "Double Cash", shortName: "Citi Double Cash", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #b23a3a 0%, #8f2a2a 50%, #6a1c1c 100%)", logo: "CITI", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 2 }],
+    rewardCurrency: "ThankYou Points", cashRate: 0.01, bestRate: 0.017,
+    bestUse: "Transfer to airline partners (Turkish Miles & Smiles, Avianca, Air France/KLM)",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to thankyou.com (Citi's rewards portal)",
+      "Click 'Redeem' → 'Cash' → 'Deposit into your bank account' at 1¢/pt",
+      "If no Citi bank account: choose 'Statement Credit' instead",
+      "Wait 1–5 business days for the deposit or credit to post",
+      "Transfer funds to your external bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "citi-custom", issuer: "Citi", name: "Custom Cash", shortName: "Citi Custom Cash",
+    brandStyle: { bg: "linear-gradient(135deg, #942828 0%, #6b1c1c 50%, #471212 100%)", logo: "CITI", accent: "#fff" },
+    defaultRewards: [{ category: "Top spending", rate: 5 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "ThankYou Points", cashRate: 0.01, bestRate: 0.017,
+    bestUse: "Transfer to airline partners (Turkish Miles & Smiles, Avianca, Air France/KLM)",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to thankyou.com (Citi's rewards portal)",
+      "Click 'Redeem' → 'Cash' → 'Deposit into your bank account' at 1¢/pt",
+      "If no Citi bank account: choose 'Statement Credit' instead",
+      "Wait 1–5 business days for the deposit or credit to post",
+      "Transfer funds to your external bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "citi-premier", issuer: "Citi", name: "Premier", shortName: "Citi Premier",
+    brandStyle: { bg: "linear-gradient(135deg, #1a2842 0%, #0f1a30 50%, #060c1c 100%)", logo: "CITI", accent: "#d4a86a" },
+    defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "ThankYou Points", cashRate: 0.01, bestRate: 0.017,
+    bestUse: "Transfer to airline partners (Turkish Miles & Smiles, Avianca, Air France/KLM)",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to thankyou.com (Citi's rewards portal)",
+      "Click 'Redeem' → 'Cash' → 'Deposit into your bank account' at 1¢/pt",
+      "If no Citi bank account: choose 'Statement Credit' instead",
+      "Wait 1–5 business days for the deposit or credit to post",
+      "Transfer funds to your external bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "costco-anywhere", issuer: "Citi", name: "Costco Anywhere Visa", shortName: "Costco Anywhere Visa",
+    brandStyle: { bg: "linear-gradient(135deg, #e31837 0%, #b01128 50%, #7d0b1c 100%)", logo: "COSTCO", accent: "#fff" },
+    defaultRewards: [{ category: "Gas", rate: 4 }, { category: "Dining", rate: 3 }, { category: "Travel", rate: 3 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Costco Rewards Certificate", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Your annual Rewards Certificate arrives in February with your statement",
+      "Bring the certificate to any Costco warehouse location",
+      "Ask the cashier to redeem it as cash back (not merchandise)",
+      "Deposit the cash at your bank (or mobile deposit if a check is issued)",
+      "Wait 1–3 business days for the deposit to clear",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "discover-it", issuer: "Discover", name: "it Cash Back", shortName: "Discover it Cash Back", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #e08a3e 0%, #c07028 50%, #9a5720 100%)", logo: "DISCOVER", accent: "#fff" },
+    defaultRewards: [{ category: "Rotating", rate: 5 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to discover.com and click 'Cashback Bonus → Redeem'",
+      "Choose 'Deposit to bank account' (no minimum, processes immediately)",
+      "Enter or confirm your bank's routing and account number",
+      "Wait 1–3 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "discover-miles", issuer: "Discover", name: "it Miles", shortName: "Discover it Miles",
+    brandStyle: { bg: "linear-gradient(135deg, #5a6a7e 0%, #3d4a5c 50%, #26303e 100%)", logo: "DISCOVER", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Discover Miles", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to discover.com and click 'Miles → Redeem Miles'",
+      "Choose 'Deposit to bank account' or 'Statement Credit' at 1¢/mile",
+      "Enter or confirm your bank's routing and account number",
+      "Wait 1–3 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "discover-chrome", issuer: "Discover", name: "it Chrome", shortName: "Discover it Chrome",
+    brandStyle: { bg: "linear-gradient(135deg, #a8afb9 0%, #888f9a 50%, #656c78 100%)", logo: "DISCOVER", accent: "#fff" },
+    defaultRewards: [{ category: "Gas", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to discover.com and click 'Cashback Bonus → Redeem'",
+      "Choose 'Deposit to bank account' (no minimum, processes immediately)",
+      "Enter or confirm your bank's routing and account number",
+      "Wait 1–3 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "capital-venture", issuer: "Capital One", name: "Venture", shortName: "Capital One Venture",
+    brandStyle: { bg: "linear-gradient(135deg, #6b7a92 0%, #4d5a72 50%, #323d52 100%)", logo: "CAPITAL ONE", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 2 }],
+    rewardCurrency: "Capital One Miles", cashRate: 0.005, bestRate: 0.015,
+    bestUse: "Erase travel purchases at 1¢/mile, or transfer to Air Canada, Turkish, Wyndham",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to capitalone.com → Rewards → Redeem Miles",
+      "Select 'Cover Purchases' to erase travel charges at 1¢/mile (best cash value)",
+      "Or choose 'Cash Back → Statement Credit' at 0.5¢/mile",
+      "Wait 1–3 business days for the credit to post",
+      "Pay your Capital One bill — the credit frees up equivalent cash in your bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "capital-venture-x", issuer: "Capital One", name: "Venture X", shortName: "Capital One Venture X",
+    brandStyle: { bg: "linear-gradient(135deg, #3a4a63 0%, #2a3649 50%, #1b2434 100%)", logo: "CAPITAL ONE", accent: "#d9b368" },
+    defaultRewards: [{ category: "Travel", rate: 10 }, { category: "Dining", rate: 5 }, { category: "Everything else", rate: 2 }],
+    rewardCurrency: "Capital One Miles", cashRate: 0.005, bestRate: 0.015,
+    bestUse: "Erase travel purchases at 1¢/mile, or transfer to Air Canada, Turkish, Wyndham",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to capitalone.com → Rewards → Redeem Miles",
+      "Select 'Cover Purchases' to erase travel charges at 1¢/mile (best cash value)",
+      "Or choose 'Cash Back → Statement Credit' at 0.5¢/mile",
+      "Wait 1–3 business days for the credit to post",
+      "Pay your Capital One bill — the credit frees up equivalent cash in your bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "capital-savor", issuer: "Capital One", name: "Savor", shortName: "Capital One Savor",
+    brandStyle: { bg: "linear-gradient(135deg, #a02d4e 0%, #7a2038 50%, #561624 100%)", logo: "CAPITAL ONE", accent: "#fff" },
+    defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Entertainment", rate: 4 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to capitalone.com → Rewards → Get Cash Back",
+      "Select 'Deposit to bank account' and confirm your bank details",
+      "Choose the amount to redeem (no minimum) and confirm",
+      "Wait 2–5 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "capital-savorone", issuer: "Capital One", name: "SavorOne", shortName: "Capital One SavorOne",
+    brandStyle: { bg: "linear-gradient(135deg, #b0385a 0%, #8a2a46 50%, #631c32 100%)", logo: "CAPITAL ONE", accent: "#fff" },
+    defaultRewards: [{ category: "Dining", rate: 3 }, { category: "Entertainment", rate: 3 }, { category: "Groceries", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to capitalone.com → Rewards → Get Cash Back",
+      "Select 'Deposit to bank account' and confirm your bank details",
+      "Choose the amount to redeem (no minimum) and confirm",
+      "Wait 2–5 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "capital-quicksilver", issuer: "Capital One", name: "Quicksilver", shortName: "Capital One Quicksilver",
+    brandStyle: { bg: "linear-gradient(135deg, #9ea6b5 0%, #747c8c 50%, #4d5564 100%)", logo: "CAPITAL ONE", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to capitalone.com → Rewards → Get Cash Back",
+      "Select 'Deposit to bank account' and confirm your bank details",
+      "Choose the amount to redeem (no minimum) and confirm",
+      "Wait 2–5 business days for funds to arrive",
+      "Verify funds have landed in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "wells-active", issuer: "Wells Fargo", name: "Active Cash", shortName: "Wells Fargo Active Cash",
+    brandStyle: { bg: "linear-gradient(135deg, #c41e2e 0%, #9a1725 50%, #6e101a 100%)", logo: "WELLS FARGO", accent: "#f7d878" },
+    defaultRewards: [{ category: "Everything", rate: 2 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to wellsfargo.com → Rewards → Redeem Rewards",
+      "Select 'Cash Rewards' → 'Deposit to Wells Fargo account' or 'Direct Deposit'",
+      "Choose or enter your linked bank account and confirm",
+      "Wait 1–3 business days for the transfer to complete",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "wells-autograph", issuer: "Wells Fargo", name: "Autograph", shortName: "Wells Fargo Autograph",
+    brandStyle: { bg: "linear-gradient(135deg, #8a1823 0%, #62111b 50%, #3d0a11 100%)", logo: "WELLS FARGO", accent: "#f7d878" },
+    defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Dining", rate: 3 }, { category: "Gas", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Rewards Points", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to wellsfargo.com → Rewards → Redeem Rewards",
+      "Select 'Cash Redemption' → 'Deposit to Wells Fargo account' or external account",
+      "Choose or enter your linked bank account and confirm",
+      "Wait 1–3 business days for the transfer to complete",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "boa-customized", issuer: "Bank of America", name: "Customized Cash Rewards", shortName: "BoA Customized Cash",
+    brandStyle: { bg: "linear-gradient(135deg, #be2e3a 0%, #941f28 50%, #6a141a 100%)", logo: "BANK OF AMERICA", accent: "#fff" },
+    defaultRewards: [{ category: "Choice", rate: 3 }, { category: "Groceries", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to bankofamerica.com → Credit Cards → Rewards & Benefits",
+      "Click 'Redeem Rewards' → choose 'Statement Credit' or 'Direct Deposit'",
+      "For direct deposit: enter or confirm your linked bank account",
+      "Wait 1–3 business days for the deposit to post",
+      "Transfer funds from BofA to your investing bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "boa-travel", issuer: "Bank of America", name: "Travel Rewards", shortName: "BoA Travel Rewards",
+    brandStyle: { bg: "linear-gradient(135deg, #8c2029 0%, #62151c 50%, #3d0c11 100%)", logo: "BANK OF AMERICA", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Points", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to bankofamerica.com → Credit Cards → Rewards & Benefits",
+      "Click 'Redeem Rewards' → 'Statement Credit for Travel' or 'Cash Back' at 1¢/pt",
+      "Enter or confirm your linked bank account for direct deposit",
+      "Wait 1–3 business days for the deposit to post",
+      "Transfer funds from BofA to your investing bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "boa-premium", issuer: "Bank of America", name: "Premium Rewards", shortName: "BoA Premium Rewards",
+    brandStyle: { bg: "linear-gradient(135deg, #5c1015 0%, #3d0a0e 50%, #1f0607 100%)", logo: "BANK OF AMERICA", accent: "#d4a86a" },
+    defaultRewards: [{ category: "Travel", rate: 2 }, { category: "Dining", rate: 2 }, { category: "Everything else", rate: 1.5 }],
+    rewardCurrency: "Points", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to bankofamerica.com → Credit Cards → Rewards & Benefits",
+      "Click 'Redeem Rewards' → choose 'Statement Credit' or 'Direct Deposit'",
+      "For direct deposit: enter or confirm your linked bank account",
+      "Wait 1–3 business days for the deposit to post",
+      "Transfer funds from BofA to your investing bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "boa-unlimited", issuer: "Bank of America", name: "Unlimited Cash Rewards", shortName: "BoA Unlimited Cash",
+    brandStyle: { bg: "linear-gradient(135deg, #a82632 0%, #801b25 50%, #551118 100%)", logo: "BANK OF AMERICA", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 1.5 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to bankofamerica.com → Credit Cards → Rewards & Benefits",
+      "Click 'Redeem Rewards' → choose 'Statement Credit' or 'Direct Deposit'",
+      "For direct deposit: enter or confirm your linked bank account",
+      "Wait 1–3 business days for the deposit to post",
+      "Transfer funds from BofA to your investing bank if needed",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "usbank-alt", issuer: "U.S. Bank", name: "Altitude Go", shortName: "US Bank Altitude Go",
+    brandStyle: { bg: "linear-gradient(135deg, #1f4b8f 0%, #163866 50%, #0d2545 100%)", logo: "U.S. BANK", accent: "#fff" },
+    defaultRewards: [{ category: "Dining", rate: 4 }, { category: "Groceries", rate: 2 }, { category: "Gas", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Reward Points", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to usbank.com → Rewards → Redeem Points",
+      "Select 'Cash back to bank account' and choose your linked account",
+      "Minimum $1 — confirm the amount and submit",
+      "Wait 2–5 business days for funds to post",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "usbank-reserve", issuer: "U.S. Bank", name: "Altitude Reserve", shortName: "US Bank Altitude Reserve",
+    brandStyle: { bg: "linear-gradient(135deg, #0e2448 0%, #081734 50%, #030a1d 100%)", logo: "U.S. BANK", accent: "#d4a86a" },
+    defaultRewards: [{ category: "Travel", rate: 3 }, { category: "Mobile wallet", rate: 3 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Altitude Reserve Points", cashRate: 0.01, bestRate: 0.015,
+    bestUse: "Redeem for travel via Altitude Rewards Center at 1.5¢/pt",
+    minRedemption: 1,
+    redemptionSteps: [
+      "Log in to usbank.com → Rewards → Redeem Points",
+      "Select 'Cash back to bank account' at 1¢/pt (or travel portal at 1.5¢/pt)",
+      "Choose your linked bank account and confirm",
+      "Wait 2–5 business days for funds to post",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "usbank-cash-plus", issuer: "U.S. Bank", name: "Cash+ Visa", shortName: "US Bank Cash+",
+    brandStyle: { bg: "linear-gradient(135deg, #2a5d9e 0%, #1d4477 50%, #11304f 100%)", logo: "U.S. BANK", accent: "#fff" },
+    defaultRewards: [{ category: "Choice", rate: 5 }, { category: "Choice 2", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to usbank.com → Rewards → Redeem Cash Back",
+      "Select 'Deposit to bank account' and choose your linked account",
+      "Minimum $1 — confirm the amount and submit",
+      "Wait 2–5 business days for funds to post",
+      "Verify funds have arrived in your bank account",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "apple-card", issuer: "Apple", name: "Apple Card", shortName: "Apple Card", popular: true,
+    brandStyle: { bg: "linear-gradient(135deg, #e8e9ec 0%, #c4c7cf 50%, #9ea2ad 100%)", logo: "", accent: "#1a1d24" },
+    defaultRewards: [{ category: "Shopping", rate: 3 }, { category: "Apple Pay", rate: 2 }, { category: "Everything else", rate: 1 }],
+    rewardCurrency: "Daily Cash", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Open the Wallet app on your iPhone and tap your Apple Card",
+      "Tap your Daily Cash balance and select 'Add to Apple Cash'",
+      "From Apple Cash, tap 'Transfer to Bank'",
+      "Select your linked bank account and confirm the transfer",
+      "Wait 1–3 business days (or use Instant Transfer for a fee)",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "robinhood-gold", issuer: "Robinhood", name: "Gold Card", shortName: "Robinhood Gold Card",
+    brandStyle: { bg: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #000 100%)", logo: "ROBINHOOD", accent: "#c2f570" },
+    defaultRewards: [{ category: "Everything", rate: 3 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Cashback (3% with Gold membership) posts automatically to your Robinhood brokerage account",
+      "Open the Robinhood app and check your 'Buying Power' balance",
+      "Use the cash directly to purchase stocks or ETFs — no bank transfer needed",
+    ],
+  },
+  {
+    id: "sofi-credit", issuer: "SoFi", name: "Credit Card", shortName: "SoFi Credit Card",
+    brandStyle: { bg: "linear-gradient(135deg, #0c1a2e 0%, #081122 50%, #030811 100%)", logo: "SOFI", accent: "#14e7d1" },
+    defaultRewards: [{ category: "Everything", rate: 2.2 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to sofi.com → Credit Card → Rewards → Redeem",
+      "Choose 'Statement Credit' or 'Deposit to SoFi Checking & Savings'",
+      "Wait 1–2 business days for funds to post to your SoFi account",
+      "To invest directly: transfer from SoFi Checking to SoFi Invest (same-day, internal)",
+      "Or initiate an ACH from SoFi Checking to your external bank",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "paypal-cashback", issuer: "PayPal", name: "Cashback Mastercard", shortName: "PayPal Cashback",
+    brandStyle: { bg: "linear-gradient(135deg, #003087 0%, #001f5c 50%, #00113a 100%)", logo: "PAYPAL", accent: "#009cde" },
+    defaultRewards: [{ category: "PayPal", rate: 3 }, { category: "Everything else", rate: 2 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Log in to paypal.com and open your PayPal Cashback Mastercard rewards",
+      "Redeem cashback to your PayPal Cash or Cash Plus account",
+      "In the PayPal app, tap 'Transfer Money' → 'Transfer to Bank'",
+      "Select your linked bank account and enter the amount",
+      "Wait 1–3 business days for funds to arrive",
+      "Transfer from your bank to your brokerage account",
+    ],
+  },
+  {
+    id: "fidelity-rewards", issuer: "Fidelity", name: "Rewards Visa", shortName: "Fidelity Rewards Visa",
+    brandStyle: { bg: "linear-gradient(135deg, #0e5a2c 0%, #074020 50%, #032914 100%)", logo: "FIDELITY", accent: "#fff" },
+    defaultRewards: [{ category: "Everything", rate: 2 }],
+    rewardCurrency: "Cashback", cashRate: 0.01, bestRate: 0.01, bestUse: null, minRedemption: 1,
+    redemptionSteps: [
+      "Your 2% cashback posts automatically to your linked Fidelity account each month",
+      "Log in to fidelity.com to confirm the deposit in your account",
+      "Navigate to the brokerage account where rewards were deposited",
+      "Confirm your available cash balance is ready to invest",
+      "Use the cash to purchase stocks, ETFs, or mutual funds directly in Fidelity",
+    ],
+  },
 ];
 
 // ==================== MERCHANT → TICKER ====================
@@ -686,12 +1172,11 @@ const REDEMPTION_TYPES = {
 
 const inferRedemption = (card) => {
   const key = (card.id || "").toLowerCase();
-  if (key.startsWith("amex-gold") || key.startsWith("amex-plat") || key.startsWith("amex-green") || key.startsWith("amex-biz") || key.startsWith("delta-") || key.startsWith("hilton-") || key.startsWith("marriott-brilliant")) return "MR";
+  if (key.startsWith("amex-gold") || key.startsWith("amex-plat") || key.startsWith("amex-green")) return "MR";
   if (key === "chase-sapphire-p" || key === "chase-sapphire-r") return "URplus";
-  if (key.startsWith("chase-") || key.startsWith("united-") || key.startsWith("southwest-") || key.startsWith("marriott-") || key.startsWith("ihg-")) return "UR";
-  if (key === "citi-premier" || key === "citi-custom" || key === "citi-strata") return "TY";
-  if (key.startsWith("capital-venture") || key === "aa-aviator" || key === "aa-executive" || key === "uber-visa" || key === "jetblue-plus") return "miles";
-  if (key === "coinbase-card") return "crypto";
+  if (key.startsWith("chase-")) return "UR";
+  if (key === "citi-premier" || key === "citi-custom") return "TY";
+  if (key.startsWith("capital-venture")) return "miles";
   return "cash";
 };
 
@@ -706,6 +1191,33 @@ const cardFromCatalog = (cardId) => {
   const c = CARD_CATALOG.find((x) => x.id === cardId);
   return c ? { ...c, rewards: [...c.defaultRewards] } : null;
 };
+
+// Fields added in the 2026-04 catalog update. Cards stored in Supabase (or localStorage)
+// before this date won't have them. hydrateCard fills them in from the current catalog entry,
+// or falls back to safe defaults for truly orphaned cards (removed from catalog).
+const _REDEMPTION_FIELDS = ["rewardCurrency", "cashRate", "bestRate", "bestUse", "minRedemption", "redemptionSteps"];
+const _ORPHAN_CARD_DEFAULTS = {
+  rewardCurrency: "Rewards",
+  cashRate: 0.01,
+  bestRate: 0.01,
+  bestUse: null,
+  minRedemption: 1,
+  redemptionSteps: [
+    "Log into your card issuer's website",
+    "Navigate to rewards redemption",
+    "Choose statement credit or direct deposit",
+    "Transfer to your broker",
+  ],
+};
+function hydrateCard(card) {
+  if (_REDEMPTION_FIELDS.every((f) => f in card)) return card; // already up-to-date
+  const entry = CARD_CATALOG.find((x) => x.id === card.id);
+  const patch = entry
+    ? { rewardCurrency: entry.rewardCurrency, cashRate: entry.cashRate, bestRate: entry.bestRate,
+        bestUse: entry.bestUse, minRedemption: entry.minRedemption, redemptionSteps: entry.redemptionSteps }
+    : _ORPHAN_CARD_DEFAULTS;
+  return { ...card, ...patch };
+}
 
 // Seed prices used only for pre-loaded DEMO flips so the demo experience works without a network.
 // User-initiated assignments never use this — they go through resolveTicker() → Yahoo.
@@ -5786,7 +6298,7 @@ export default function Stockback() {
   const [broker, setBroker] = useState(() => loadPersistedState()?.broker ?? "yahoo");
   const [connectedBrokers, setConnectedBrokers] = useState(() => loadPersistedState()?.connectedBrokers ?? {});
 
-  const [userCards, setUserCards] = useState(() => loadPersistedState()?.userCards ?? []);
+  const [userCards, setUserCards] = useState(() => (loadPersistedState()?.userCards ?? []).map(hydrateCard));
   const [selectedCards, setSelectedCards] = useState(() => loadPersistedState()?.selectedCards ?? []);
 
   const [flips, setFlips] = useState(() => loadPersistedState()?.flips ?? []);
@@ -5849,11 +6361,15 @@ export default function Stockback() {
       setPortfolio([]);
       setUserCards([]);
       loadUserData().then(({ flips: dbFlips, portfolio: dbPortfolio, userCards: dbCards }) => {
+        const hydratedCards = dbCards.map(hydrateCard);
+        const cardSnapshotsDirty = hydratedCards.some((c, i) => c !== dbCards[i]);
         setFlips(dbFlips);
         setPortfolio(dbPortfolio);
-        setUserCards(dbCards);
+        setUserCards(hydratedCards);
         firstSyncAfterLoad.current = { flips: true, portfolio: true, cards: true };
         dbLoaded.current = true;
+        // Write back any card snapshots that gained new redemption fields during hydration.
+        if (cardSnapshotsDirty) syncUserCards(hydratedCards);
         // Route based on freshly-loaded cards, not stale state.
         // Never interrupt an in-progress onboarding flow (bug 2).
         // Only reroute when coming from welcome or when forced onboarding (bug 1).
