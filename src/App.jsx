@@ -4963,6 +4963,7 @@ export default function Stockback() {
 
   const syncCardsTimer = useRef(null);
   useEffect(() => {
+    console.log('[sync] userCards effect fired. supabaseUser:', !!supabaseUser, 'dbLoaded:', dbLoaded.current, 'userCards length:', userCards.length);
     if (!supabaseUser || !dbLoaded.current) return;
     clearTimeout(syncCardsTimer.current);
     syncCardsTimer.current = setTimeout(() => syncUserCards(userCards), 1500);
