@@ -4152,7 +4152,7 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload, onGoToCards }) => 
                 <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5 }}>
                   Add a card first so we know which rewards rates to apply.
                 </div>
-                <button onClick={onGoToCards} style={{
+                <button onClick={() => { onClose(); onGoToCards?.(); }} style={{
                   width: "100%", padding: "18px 16px", borderRadius: 14, border: "none",
                   background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
                   color: "#fff", cursor: "pointer",
@@ -4335,9 +4335,12 @@ const SettingsTab = ({
           <SettingsRow icon={Shield} label="Permissions" onClick={() => setView("permissions")} />
           <SettingsRow icon={MessageSquare} label="Send feedback" onClick={() => setView("feedback")} />
           <SettingsRow icon={HelpCircle} label="Help & About" onClick={() => setView("help")} />
-          {supabaseUser && (
-            <SettingsRow icon={User} label="Account" value={supabaseUser.email} onClick={() => setView("account")} />
-          )}
+          <SettingsRow
+            icon={User}
+            label={supabaseUser ? "Account" : isDemoMode ? "Demo Mode" : "Guest Session"}
+            value={supabaseUser ? supabaseUser.email : isDemoMode ? "Demo data" : "Not signed in"}
+            onClick={() => setView("account")}
+          />
           <div style={{ fontSize: 10, color: "var(--text-4)", textAlign: "center", marginTop: 20, padding: "0 20px", lineHeight: 1.5 }}>
             <b style={{ color: "var(--text-3)" }}>Stockback</b> — design concept. No real accounts or trades. All flows are illustrative.
           </div>
@@ -4554,30 +4557,109 @@ const SettingsTab = ({
     return <HelpScreen onBack={() => setView("main")} />;
   }
 
-  // Account sub-view (signed-in users only)
+  // Account sub-view
   if (view === "account") {
+    const accountTitle = supabaseUser ? "Account" : isDemoMode ? "Demo Mode" : "Guest Session";
+
+    if (supabaseUser) {
+      return (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
+          <Header title={accountTitle} />
+          <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--bg-1)", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 10, color: "var(--text-4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Signed in as</div>
+              <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 500 }}>{supabaseUser.email}</div>
+            </div>
+            <button onClick={onSignOut} style={{
+              padding: "13px", borderRadius: 12, marginTop: 6,
+              background: "transparent", border: "1px solid var(--border-strong)",
+              color: "var(--text-1)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}><LogOut size={14} /> Sign out</button>
+            <button onClick={onDeleteSignedInAccount} style={{
+              padding: "13px", borderRadius: 12,
+              background: "transparent", border: "1px solid rgba(255, 95, 109, 0.4)",
+              color: "var(--red)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}><Trash2 size={14} /> Delete account</button>
+            <div style={{ fontSize: 11, color: "var(--text-4)", lineHeight: 1.5, textAlign: "center", marginTop: 4, padding: "0 10px" }}>
+              Deleting removes all your cards, flips, and portfolio data from Stockback servers.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (isDemoMode) {
+      return (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
+          <Header title={accountTitle} />
+          <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{
+              padding: "14px 16px", borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(217, 179, 104, 0.14) 0%, rgba(217, 179, 104, 0.04) 100%)",
+              border: "1px solid var(--gold)",
+            }}>
+              <div style={{ fontSize: 12.5, color: "var(--text-1)", fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                <EyeOff size={12} color="var(--gold)" /> You're in demo mode
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.55 }}>
+                Your flips, portfolio, and statements are pre-filled demo data — no real broker or card is connected.
+              </div>
+            </div>
+            {onExitDemo && (
+              <button onClick={onExitDemo} style={{
+                padding: "14px 16px", borderRadius: 14, marginTop: 2,
+                background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
+                border: "none", color: "#fff",
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 11, textAlign: "left",
+                boxShadow: "0 6px 16px rgba(76, 139, 245, 0.28)",
+              }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: "rgba(255,255,255,0.22)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}><ArrowRight size={16} color="#fff" strokeWidth={2.6} /></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: "-0.01em" }}>Exit demo mode</div>
+                  <div style={{ fontSize: 11, opacity: 0.9, marginTop: 1 }}>Sign in with Google or Apple to start fresh</div>
+                </div>
+              </button>
+            )}
+            <button onClick={onClearData} style={{
+              padding: "12px 14px", borderRadius: 12,
+              background: "transparent", border: "1px solid var(--border-strong)",
+              color: "var(--text-1)", fontSize: 12.5, fontWeight: 500, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}><RefreshCw size={13} /> Clear demo flips, portfolio &amp; statements</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Guest session
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-0)" }}>
-        <Header title="Account" />
+        <Header title={accountTitle} />
         <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 18px 40px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ padding: "14px 16px", borderRadius: 14, background: "var(--bg-1)", border: "1px solid var(--border)" }}>
-            <div style={{ fontSize: 10, color: "var(--text-4)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Signed in as</div>
-            <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 500 }}>{supabaseUser?.email}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-1)", fontWeight: 700, marginBottom: 4 }}>Your session data</div>
+            <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.55 }}>
+              Nothing is saved to a server. Everything lives in this browser session. Signing in syncs your data across devices.
+            </div>
           </div>
-          <button onClick={onSignOut} style={{
+          <button onClick={() => {
+            if (!window.confirm("This will remove all your cards, flips, and portfolio. This cannot be undone. Continue?")) return;
+            onDeleteAccount?.();
+          }} style={{
             padding: "13px", borderRadius: 12, marginTop: 6,
-            background: "transparent", border: "1px solid var(--border-strong)",
-            color: "var(--text-1)", fontSize: 13, fontWeight: 500, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}><LogOut size={14} /> Sign out</button>
-          <button onClick={onDeleteSignedInAccount} style={{
-            padding: "13px", borderRadius: 12,
             background: "transparent", border: "1px solid rgba(255, 95, 109, 0.4)",
             color: "var(--red)", fontSize: 13, fontWeight: 500, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}><Trash2 size={14} /> Delete account</button>
+          }}><Trash2 size={14} /> Clear all data</button>
           <div style={{ fontSize: 11, color: "var(--text-4)", lineHeight: 1.5, textAlign: "center", marginTop: 4, padding: "0 10px" }}>
-            Deleting removes all your cards, flips, and portfolio data from Stockback servers.
+            Removes all local data and returns to the Welcome screen.
           </div>
         </div>
       </div>
@@ -5165,9 +5247,11 @@ export default function Stockback() {
   const [openedTicker, setOpenedTicker] = useState(null);
   const [showManualFlip, setShowManualFlip] = useState(false);
   const [showStatementUpload, setShowStatementUpload] = useState(false);
+  const [showAddCardForUpload, setShowAddCardForUpload] = useState(false);
+  const [showCustomCardForUpload, setShowCustomCardForUpload] = useState(false);
   const [manualFlipDefaultCardId, setManualFlipDefaultCardId] = useState(null);
   const returnToFlipAfterCards = useRef(false);
-  const returnToStatementUploadAfterCards = useRef(false);
+  const returnToStatementUploadAfterCard = useRef(false);
   const [invalidTickerMain, setInvalidTickerMain] = useState(null); // { query, reason }
   const [toasts, setToasts] = useState([]);
 
@@ -5528,12 +5612,10 @@ export default function Stockback() {
             userCards={userCards} setUserCards={setUserCards}
             onBack={() => {
               returnToFlipAfterCards.current = false;
-              returnToStatementUploadAfterCards.current = false;
               setScreen("welcome");
             }}
             onSkip={() => {
               returnToFlipAfterCards.current = false;
-              returnToStatementUploadAfterCards.current = false;
               setScreen("upload");
             }}
             onNext={() => {
@@ -5543,10 +5625,6 @@ export default function Stockback() {
                 setManualFlipDefaultCardId(lastSelected);
                 setScreen("app");
                 setShowManualFlip(true);
-              } else if (returnToStatementUploadAfterCards.current) {
-                returnToStatementUploadAfterCards.current = false;
-                setScreen("app");
-                setShowStatementUpload(true);
               } else {
                 setScreen("upload");
               }
@@ -5613,8 +5691,9 @@ export default function Stockback() {
             unassigned={unassigned} setUnassigned={setUnassigned}
             onShowToast={pushToast}
             onGoToCards={() => {
-              returnToStatementUploadAfterCards.current = true;
-              setScreen("cards");
+              setActiveTab("cards");
+              returnToStatementUploadAfterCard.current = true;
+              setShowAddCardForUpload(true);
             }} />
         )}
 
@@ -5710,6 +5789,45 @@ export default function Stockback() {
         />
       )}
 
+      {showAddCardForUpload && (
+        <AddCardModal
+          existing={userCards}
+          onClose={() => {
+            setShowAddCardForUpload(false);
+            returnToStatementUploadAfterCard.current = false;
+          }}
+          onAdd={(c) => {
+            setUserCards((cs) => [...cs, c]);
+            setShowAddCardForUpload(false);
+            if (returnToStatementUploadAfterCard.current) {
+              returnToStatementUploadAfterCard.current = false;
+              setShowStatementUpload(true);
+            }
+          }}
+          onOpenCustom={() => {
+            setShowAddCardForUpload(false);
+            setShowCustomCardForUpload(true);
+          }}
+        />
+      )}
+
+      {showCustomCardForUpload && (
+        <CustomCardModal
+          onClose={() => {
+            setShowCustomCardForUpload(false);
+            returnToStatementUploadAfterCard.current = false;
+          }}
+          onAdd={(c) => {
+            setUserCards((cs) => [...cs, c]);
+            setShowCustomCardForUpload(false);
+            if (returnToStatementUploadAfterCard.current) {
+              returnToStatementUploadAfterCard.current = false;
+              setShowStatementUpload(true);
+            }
+          }}
+        />
+      )}
+
       {showStatementUpload && (
         <StatementUploadSheet
           userCards={userCards}
@@ -5717,8 +5835,9 @@ export default function Stockback() {
           onUpload={handleSimulateUpload}
           onGoToCards={() => {
             setShowStatementUpload(false);
-            returnToStatementUploadAfterCards.current = true;
-            setScreen("cards");
+            setActiveTab("cards");
+            returnToStatementUploadAfterCard.current = true;
+            setShowAddCardForUpload(true);
           }}
         />
       )}
