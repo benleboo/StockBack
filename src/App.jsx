@@ -512,6 +512,17 @@ const SHUFFLE_COLORS = [
   "#cc0000", "#ac2318", "#1877f2", "#1db954", "#d9b368",
 ];
 
+const STORAGE_KEY = "stockback-state-v1";
+const loadPersistedState = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.isDemoMode) return null;
+    return parsed;
+  } catch { return null; }
+};
+
 // ==================== DEMO DATA ====================
 const DEMO_FLIPS = [
   { id: "d1", ticker: "AAPL", merchant: "Apple Store", category: "Shopping", cardId: "apple-card", confidence: 0.98,
@@ -4806,20 +4817,20 @@ const ToastItem = ({ toast, onDismiss }) => {
 
 // ==================== MAIN APP ====================
 export default function Stockback() {
-  const [screen, setScreen] = useState("welcome"); // welcome | cards | upload | app
-  const [activeTab, setActiveTab] = useState("home"); // home | portfolio | statements | cards | settings
+  const [screen, setScreen] = useState(() => loadPersistedState()?.screen ?? "welcome"); // welcome | cards | upload | app
+  const [activeTab, setActiveTab] = useState(() => loadPersistedState()?.activeTab ?? "home"); // home | portfolio | statements | cards | settings
   const [lastNonSettingsTab, setLastNonSettingsTab] = useState("home");
 
-  const [themeId, setThemeId] = useState("stockback-dark");
-  const [broker, setBroker] = useState("yahoo");
-  const [connectedBrokers, setConnectedBrokers] = useState({});
+  const [themeId, setThemeId] = useState(() => loadPersistedState()?.themeId ?? "stockback-dark");
+  const [broker, setBroker] = useState(() => loadPersistedState()?.broker ?? "yahoo");
+  const [connectedBrokers, setConnectedBrokers] = useState(() => loadPersistedState()?.connectedBrokers ?? {});
 
-  const [userCards, setUserCards] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
+  const [userCards, setUserCards] = useState(() => loadPersistedState()?.userCards ?? []);
+  const [selectedCards, setSelectedCards] = useState(() => loadPersistedState()?.selectedCards ?? []);
 
-  const [flips, setFlips] = useState([]);
-  const [unassigned, setUnassigned] = useState([]);
-  const [portfolio, setPortfolio] = useState([]);
+  const [flips, setFlips] = useState(() => loadPersistedState()?.flips ?? []);
+  const [unassigned, setUnassigned] = useState(() => loadPersistedState()?.unassigned ?? []);
+  const [portfolio, setPortfolio] = useState(() => loadPersistedState()?.portfolio ?? []);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   const [openedItemId, setOpenedItemId] = useState(null);
@@ -4849,6 +4860,26 @@ export default function Stockback() {
   useEffect(() => {
     if (activeTab !== "settings") setLastNonSettingsTab(activeTab);
   }, [activeTab]);
+
+  // Persist state on every relevant change (never in demo mode)
+  useEffect(() => {
+    if (isDemoMode) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        isDemoMode,
+        screen,
+        activeTab,
+        themeId,
+        broker,
+        connectedBrokers,
+        userCards,
+        selectedCards,
+        flips,
+        unassigned,
+        portfolio,
+      }));
+    } catch (_) { /* storage full or unavailable — ignore */ }
+  }, [isDemoMode, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio]);
 
   const cardsMap = useMemo(() => {
     const m = {};
