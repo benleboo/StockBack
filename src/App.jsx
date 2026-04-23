@@ -1523,7 +1523,7 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
 // ==================== BOTTOM SHEET + FORM HELPERS ====================
 // The BottomSheet now uses position: fixed with inset:0 and a constrained inner column,
 // so when opened from a full-width Settings panel it still displays correctly.
-const BottomSheet = ({ onClose, title, children, maxHeight = "90vh" }) => {
+const BottomSheet = ({ onClose, title, children, maxHeight = "90vh", height = "auto" }) => {
   const downOnBackdrop = useRef(false);
   return (
   <div style={{
@@ -1536,7 +1536,7 @@ const BottomSheet = ({ onClose, title, children, maxHeight = "90vh" }) => {
     onClick={(e) => { if (downOnBackdrop.current && e.target === e.currentTarget) onClose(); }}
   >
     <div className="slide-up" onClick={(e) => e.stopPropagation()} style={{
-      width: "100%", maxWidth: 420, maxHeight,
+      width: "100%", maxWidth: 420, maxHeight, height,
       background: "var(--bg-0)",
       borderTopLeftRadius: 22, borderTopRightRadius: 22,
       display: "flex", flexDirection: "column",
@@ -4098,7 +4098,7 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
   };
 
   return (
-    <BottomSheet onClose={onClose} title="Upload statement" maxHeight="90vh">
+    <BottomSheet onClose={onClose} title="Upload statement" maxHeight="90vh" height="90vh">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
         {parsedResult ? (
           <div style={{ padding: "28px 14px 20px", textAlign: "center" }}>
