@@ -215,9 +215,6 @@ const FontLoader = () => (
     .sb-mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; letter-spacing: -0.02em; }
     .sb-brand { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; font-weight: 700; }
 
-    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    .ticker-track { animation: ticker-scroll 34s linear infinite; }
-
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .fade-in { animation: fadeIn 0.3s ease forwards; }
 
@@ -1024,21 +1021,8 @@ const StockbackLogo = ({ size = 40, color }) => {
 
 // ==================== TICKER BANNER ====================
 const TickerBanner = ({ items }) => {
-  const [ticks, setTicks] = useState(items);
-  useEffect(() => { setTicks(items); }, [items.length]);
-  useEffect(() => {
-    if (ticks.length === 0) return;
-    const id = setInterval(() => {
-      setTicks((prev) => prev.map((t) => {
-        const delta = (Math.random() - 0.5) * 0.3;
-        return { ...t, change: +(t.change + delta).toFixed(2) };
-      }));
-    }, 2000);
-    return () => clearInterval(id);
-  }, [ticks.length]);
-
-  if (!ticks.length) return null;
-  const content = ticks.concat(ticks);
+  if (!items.length) return null;
+  const content = items;
   const NYSE_GREEN = "#00c853", NYSE_RED = "#ff3d3d", NYSE_YELLOW = "#ffd740";
   return (
     <div style={{
@@ -1056,7 +1040,7 @@ const TickerBanner = ({ items }) => {
         <span className="pulse-dot" style={{ width: 5, height: 5, borderRadius: 999, background: NYSE_YELLOW }} />
         NYSE
       </div>
-      <div className="ticker-track" style={{
+      <div style={{
         display: "flex", gap: 28, whiteSpace: "nowrap",
         marginTop: 14, width: "max-content",
       }}>
@@ -1067,7 +1051,6 @@ const TickerBanner = ({ items }) => {
             <span style={{ color: "#c4c4c4", fontSize: 11 }}>${it.amount.toFixed(2)}</span>
             <span style={{
               color: it.change >= 0 ? NYSE_GREEN : NYSE_RED, fontSize: 10.5, fontWeight: 600,
-              transition: "color 0.3s",
             }}>
               {it.change >= 0 ? "▲" : "▼"} {Math.abs(it.change).toFixed(2)}%
             </span>
@@ -1226,7 +1209,7 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           <button onClick={() => onSignIn("google")} style={{
             flex: 1, padding: "12px 10px",
             background: "#ffffff", color: "#1a1a1a",
-            border: "none", borderRadius: 12,
+            border: "1px solid var(--border-strong)", borderRadius: 12,
             fontSize: 12.5, fontWeight: 500, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
@@ -1235,7 +1218,7 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
           <button onClick={() => onSignIn("apple")} style={{
             flex: 1, padding: "12px 10px",
             background: "#000000", color: "#ffffff",
-            border: "1px solid #333", borderRadius: 12,
+            border: "1px solid var(--border-strong)", borderRadius: 12,
             fontSize: 12.5, fontWeight: 500, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
@@ -1436,21 +1419,22 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
           })}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+        <div style={{ marginBottom: 20 }}>
           <button onClick={() => setShowAddModal(true)} style={{
-            padding: "13px 16px", borderRadius: 12,
-            border: "1px dashed var(--text-4)",
-            background: "transparent", color: "var(--accent-light)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            cursor: "pointer", fontSize: 13, fontWeight: 500,
-          }}><Search size={14} /> Search all {CARD_CATALOG.length} cards</button>
-          <button onClick={() => setShowCustom(true)} style={{
-            padding: "13px 16px", borderRadius: 12,
-            border: "1px dashed var(--text-4)",
-            background: "transparent", color: "var(--text-2)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            cursor: "pointer", fontSize: 13, fontWeight: 500,
-          }}><Plus size={14} /> Create a custom card</button>
+            width: "100%", padding: "18px 16px", borderRadius: 14, border: "none",
+            background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
+            color: "#fff", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 14, textAlign: "left",
+            boxShadow: "0 6px 16px rgba(76, 139, 245, 0.3)",
+            overflow: "hidden", position: "relative",
+          }}>
+            <MiniCardIllustration variant="catalog" />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 2 }}>Add a card</div>
+              <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.3 }}>Search {CARD_CATALOG.length}+ cards or create a custom one</div>
+            </div>
+            <ArrowRight size={18} color="#fff" strokeWidth={2.3} />
+          </button>
         </div>
 
         {userCards.length > 0 && (
@@ -1514,7 +1498,8 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
 
       {showAddModal && (
         <AddCardModal existing={userCards} onClose={() => setShowAddModal(false)}
-          onAdd={(card) => { addCard(card); setShowAddModal(false); }} />
+          onAdd={(card) => { addCard(card); setShowAddModal(false); }}
+          onOpenCustom={() => { setShowAddModal(false); setShowCustom(true); }} />
       )}
       {showCustom && (
         <CustomCardModal onClose={() => setShowCustom(false)}
@@ -1941,14 +1926,14 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions }
         </div>
         <div style={{ padding: "12px 26px 22px", display: "flex", gap: 10, flexShrink: 0 }}>
           <button onClick={denyAll} style={{
-            padding: "13px 18px", borderRadius: 12,
+            flex: 1, padding: "13px", borderRadius: 12,
             border: "1px solid var(--border-strong)", background: "transparent",
-            color: "var(--text-2)", fontSize: 12.5, fontWeight: 500, cursor: "pointer",
+            color: "var(--text-2)", fontSize: 13, fontWeight: 500, cursor: "pointer",
           }}>Not now</button>
           <button onClick={grantAll} style={{
-            flex: 1, padding: "13px",
+            flex: 1, padding: "13px", borderRadius: 12,
             background: "var(--accent)", color: "#fff",
-            border: "none", borderRadius: 12,
+            border: "none",
             fontSize: 13, fontWeight: 500, cursor: "pointer",
           }}>Allow both</button>
         </div>
@@ -4834,6 +4819,7 @@ export default function Stockback() {
   const dbLoaded = useRef(false); // true after loadUserData() has populated state
   // Per-effect flags: skip the first sync fire after a load (state is stale at that point)
   const firstSyncAfterLoad = useRef({ flips: false, portfolio: false, cards: false });
+  const themeBeforeWelcome = useRef(null);
 
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
@@ -4852,6 +4838,25 @@ export default function Stockback() {
   const [permissions, setPermissions] = useState({ notifications: false, camera: false, requested: false });
 
   useEffect(() => { applyTheme(themeId); }, [themeId]);
+
+  // Cycle through all themes while the welcome screen is active; restore on exit
+  useEffect(() => {
+    if (screen !== "welcome") return;
+    themeBeforeWelcome.current = themeId;
+    const themeKeys = Object.keys(THEMES);
+    let idx = themeKeys.indexOf(themeId);
+    const id = setInterval(() => {
+      idx = (idx + 1) % themeKeys.length;
+      setThemeId(themeKeys[idx]);
+    }, 3000);
+    return () => {
+      clearInterval(id);
+      if (themeBeforeWelcome.current !== null) {
+        setThemeId(themeBeforeWelcome.current);
+        themeBeforeWelcome.current = null;
+      }
+    };
+  }, [screen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Supabase auth: restore existing session on mount and listen for future changes
   useEffect(() => {
