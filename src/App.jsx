@@ -10,7 +10,7 @@ import {
   PiggyBank, Coins, Star, HelpCircle, MessageSquare, Sparkles,
   FileText, CameraOff, Clock, Undo2, Info, Link2, ChevronDown, ChevronUp,
   FolderInput, Zap, Award, Lock, Unlock, CheckCircle, Loader, EyeOff,
-  ArrowUpDown, SortAsc, SlidersHorizontal, Mail, Repeat, PlayCircle,
+  ArrowUpDown, SortAsc, SlidersHorizontal, Mail, Repeat, PlayCircle, LogOut,
 } from "lucide-react";
 
 // ==================== THEMES ====================
@@ -4056,7 +4056,7 @@ const StatementUploadSheet = ({ userCards, onClose, onUpload }) => {
 // When user closes Settings (back arrow), onClose returns them to their last active tab.
 const SettingsTab = ({
   themeId, setThemeId, broker, setBroker, connectedBrokers, setConnectedBrokers,
-  onDeleteAccount, onClearData, onExitDemo, isDemoMode, onClose, onShowToast,
+  onDeleteAccount, onClearData, onExitDemo, isDemoMode, onClose, onShowToast, onSignOut,
 }) => {
   const [view, setView] = useState("main");
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false);
@@ -4102,6 +4102,10 @@ const SettingsTab = ({
           <SettingsRow icon={MessageSquare} label="Send feedback" onClick={() => setView("feedback")} />
           <SettingsRow icon={HelpCircle} label="Help & About" onClick={() => setView("help")} />
           <SettingsRow icon={Trash2} label="Delete" danger onClick={() => setView("delete")} />
+          {onSignOut && (<>
+            <div style={{ fontSize: 10.5, color: "var(--text-4)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 14, marginBottom: 2, paddingLeft: 4 }}>Account</div>
+            <SettingsRow icon={LogOut} label="Sign out" onClick={onSignOut} />
+          </>)}
           <div style={{ fontSize: 10, color: "var(--text-4)", textAlign: "center", marginTop: 20, padding: "0 20px", lineHeight: 1.5 }}>
             <b style={{ color: "var(--text-3)" }}>Stockback</b> — design concept. No real accounts or trades. All flows are illustrative.
           </div>
@@ -4968,7 +4972,6 @@ export default function Stockback() {
 
   const syncCardsTimer = useRef(null);
   useEffect(() => {
-    console.log('[sync] userCards effect fired. supabaseUser:', !!supabaseUser, 'dbLoaded:', dbLoaded.current, 'userCards length:', userCards.length);
     if (!supabaseUser || !dbLoaded.current) return;
     if (firstSyncAfterLoad.current.cards) { firstSyncAfterLoad.current.cards = false; return; }
     clearTimeout(syncCardsTimer.current);
@@ -5073,6 +5076,11 @@ export default function Stockback() {
         setActiveTab(snap.activeTab);
       },
     }), 200);
+  };
+
+  const handleSignOut = () => {
+    if (!window.confirm("Sign out of Stockback?")) return;
+    supabase.auth.signOut(); // onAuthStateChange SIGNED_OUT resets all state and routes to welcome
   };
 
   const handleOpenSettings = () => setActiveTab("settings");
@@ -5190,6 +5198,7 @@ export default function Stockback() {
             isDemoMode={isDemoMode}
             onClose={handleCloseSettings}
             onShowToast={pushToast}
+            onSignOut={supabaseUser ? handleSignOut : undefined}
           />
         )}
       </Shell>

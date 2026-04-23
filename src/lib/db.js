@@ -114,7 +114,6 @@ export async function getUserCards() {
 }
 
 export async function syncUserCards(userCards) {
-  console.log('[db] syncUserCards called with', userCards.length, 'cards');
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
