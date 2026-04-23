@@ -764,6 +764,27 @@ const seedPriceFor = (t) => TICKER_PRICE_ESTIMATE[t] || null;
 
 // In-memory cache so we only hit Yahoo once per ticker per session.
 const _priceCache = {};
+// In-memory cache for merchant-name → Yahoo search results within a session.
+const _searchCache = {};
+
+const MANUAL_FLIP_CATEGORIES = [
+  "Dining / Restaurants",
+  "Groceries",
+  "Gas",
+  "Travel (flights, hotels)",
+  "Transit (rideshare, subway, parking)",
+  "Streaming",
+  "Entertainment (concerts, events)",
+  "Online shopping",
+  "Department stores",
+  "Drugstores",
+  "Wholesale clubs (Costco, Sam's)",
+  "Utilities",
+  "Phone / Internet",
+  "Fitness",
+  "Subscriptions",
+  "Everything else",
+];
 
 // Attempt to fetch real quote from Yahoo Finance. CORS may block this in some environments —
 // we return null on any failure (never fabricate).
@@ -3085,32 +3106,76 @@ const PurchaseDetail = ({ item, card, cardsMap, userCards, onClose, onUpdate, on
 };
 
 // ==================== MANUAL FLIP MODAL ====================
-const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoToCards }) => {
+const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoToCards, defaultCardId }) => {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
-  const [cardId, setCardId] = useState(userCards[0]?.id || "");
+  const [cardId, setCardId] = useState(defaultCardId || userCards[0]?.id || "");
   const [ticker, setTicker] = useState("");
   const [category, setCategory] = useState("");
-  const [suggested, setSuggested] = useState(null);
+  const [suggested, setSuggested] = useState(null);       // merchant → ticker suggestion
+  const [merchantSuggestion, setMerchantSuggestion] = useState(null); // ticker → merchant name
   const [resolving, setResolving] = useState(false);
+  const merchantRef = useRef(merchant);
+  useEffect(() => { merchantRef.current = merchant; }, [merchant]);
 
+  // Merchant → ticker: hardcoded table first, then Yahoo search fallback (debounced 400ms)
   useEffect(() => {
     if (merchant.length < 3) { setSuggested(null); return; }
     const hit = lookupMerchant(merchant);
     if (hit && hit.ticker && hit.confidence >= 0.7) {
       setSuggested({ ticker: hit.ticker, category: hit.category, confidence: hit.confidence });
-    } else {
-      setSuggested(null);
+      return;
     }
-  }, [merchant]);
+    setSuggested(null);
+    const key = merchant.toLowerCase();
+    if (_searchCache[key] !== undefined) { setSuggested(_searchCache[key]); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/yahoo?endpoint=search&q=${encodeURIComponent(merchant)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const found = (data?.quotes || []).find((h) => h?.symbol && (h.quoteType === "EQUITY" || h.quoteType === "ETF"));
+          if (found?.symbol) {
+            const suggestion = { ticker: found.symbol, name: found.shortname || found.longname || found.symbol, fromYahoo: true };
+            _searchCache[key] = suggestion;
+            setSuggested(suggestion);
+          } else {
+            _searchCache[key] = null;
+          }
+        }
+      } catch (_) {}
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [merchant]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ticker → merchant name: auto-fill if merchant empty, suggest if it differs (debounced 400ms)
+  useEffect(() => {
+    const tkr = ticker.trim().toUpperCase();
+    if (!/^[A-Z]{2,5}$/.test(tkr)) { setMerchantSuggestion(null); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const result = await fetchYahooQuote(tkr);
+        if (result?.name && result.name !== tkr) {
+          const cur = merchantRef.current.trim();
+          if (!cur) {
+            setMerchant(result.name);
+          } else if (cur.toLowerCase() !== result.name.toLowerCase()) {
+            setMerchantSuggestion(result.name);
+          }
+        }
+      } catch (_) {}
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [ticker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const card = userCards.find((c) => c.id === cardId);
 
   const allCategories = useMemo(() => {
-    const s = new Set();
-    if (card) card.rewards.forEach((r) => s.add(r.category));
-    s.add("Everything else");
-    return Array.from(s);
+    return MANUAL_FLIP_CATEGORIES.map((cat) => {
+      if (!card) return { value: cat, label: cat };
+      const r = rateForCategory(card, cat);
+      return { value: cat, label: r > 1 ? `${cat} — ${r}% back` : cat };
+    });
   }, [card]);
   const parsedAmt = parseFloat(amount) || 0;
   const rate = card ? rateForCategory(card, category || "Everything") : 1;
@@ -3165,7 +3230,7 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
   return (
     <BottomSheet onClose={onClose} title="Add manual flip">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
-        <LabeledInput label="Merchant" placeholder="e.g. Starbucks, Apple, Chipotle" value={merchant} onChange={setMerchant} />
+        <LabeledInput label="Merchant" placeholder="e.g. Starbucks, Apple, Chipotle" value={merchant} onChange={(v) => { setMerchant(v); setMerchantSuggestion(null); }} />
         {suggested && (
           <div style={{
             padding: "9px 12px", borderRadius: 10, marginBottom: 12,
@@ -3174,20 +3239,36 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
           }}>
             <Sparkles size={13} color="var(--accent-light)" />
             <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
-              Looks like <b>{suggested.ticker}</b> ({suggested.category})
+              Ticker: <b>{suggested.ticker}</b>{suggested.category ? ` (${suggested.category})` : suggested.name ? ` — ${suggested.name}` : ""}
             </div>
-            <button onClick={() => { setTicker(suggested.ticker); setCategory(suggested.category); setSuggested(null); }} style={{
+            <button onClick={() => { setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
               padding: "4px 8px", borderRadius: 7, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
             }}>Use</button>
           </div>
         )}
         <LabeledInput label="Amount ($)" placeholder="0.00" value={amount} onChange={setAmount} />
-        <LabeledInput label="Ticker" placeholder="e.g. SBUX" value={ticker} onChange={(v) => setTicker(v.toUpperCase())} />
+        <LabeledInput label="Ticker" placeholder="e.g. SBUX" value={ticker} onChange={(v) => { setTicker(v.toUpperCase()); setMerchantSuggestion(null); }} />
+        {merchantSuggestion && (
+          <div style={{
+            padding: "9px 12px", borderRadius: 10, marginBottom: 12,
+            background: "var(--accent-soft)", border: "1px solid var(--accent)",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <Sparkles size={13} color="var(--accent-light)" />
+            <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
+              Merchant: <b>{merchantSuggestion}</b>
+            </div>
+            <button onClick={() => { setMerchant(merchantSuggestion); setMerchantSuggestion(null); }} style={{
+              padding: "4px 8px", borderRadius: 7, border: "none",
+              background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
+            }}>Use</button>
+          </div>
+        )}
         <SelectInput label="Card" value={cardId} onChange={setCardId}
           options={userCards.map((c) => ({ value: c.id, label: c.shortName }))} />
         <SelectInput label="Category" value={category} onChange={setCategory}
-          options={[{ value: "", label: "Select category..." }, ...allCategories.map((c) => ({ value: c, label: c }))]} />
+          options={[{ value: "", label: "Select category..." }, ...allCategories]} />
         {parsedAmt > 0 && card && (
           <div style={{
             padding: "10px 12px", borderRadius: 10, marginTop: 4, marginBottom: 14,
@@ -4977,6 +5058,8 @@ export default function Stockback() {
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
   const [showManualFlip, setShowManualFlip] = useState(false);
+  const [manualFlipDefaultCardId, setManualFlipDefaultCardId] = useState(null);
+  const returnToFlipAfterCards = useRef(false);
   const [invalidTickerMain, setInvalidTickerMain] = useState(null); // { query, reason }
   const [toasts, setToasts] = useState([]);
 
@@ -5283,9 +5366,25 @@ export default function Stockback() {
           <CardPicker
             selected={selectedCards} setSelected={setSelectedCards}
             userCards={userCards} setUserCards={setUserCards}
-            onBack={() => setScreen("welcome")}
-            onSkip={() => setScreen("upload")}
-            onNext={() => setScreen("upload")}
+            onBack={() => {
+              returnToFlipAfterCards.current = false;
+              setScreen("welcome");
+            }}
+            onSkip={() => {
+              returnToFlipAfterCards.current = false;
+              setScreen("upload");
+            }}
+            onNext={() => {
+              if (returnToFlipAfterCards.current) {
+                returnToFlipAfterCards.current = false;
+                const lastSelected = selectedCards[selectedCards.length - 1] || null;
+                setManualFlipDefaultCardId(lastSelected);
+                setScreen("app");
+                setShowManualFlip(true);
+              } else {
+                setScreen("upload");
+              }
+            }}
           />
         </Shell>
         <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -5413,12 +5512,19 @@ export default function Stockback() {
       {showManualFlip && (
         <ManualFlipModal
           userCards={userCards}
-          onClose={() => setShowManualFlip(false)}
-          onGoToCards={() => { setShowManualFlip(false); setScreen("cards"); }}
+          defaultCardId={manualFlipDefaultCardId}
+          onClose={() => { setShowManualFlip(false); setManualFlipDefaultCardId(null); }}
+          onGoToCards={() => {
+            setShowManualFlip(false);
+            setManualFlipDefaultCardId(null);
+            returnToFlipAfterCards.current = true;
+            setScreen("cards");
+          }}
           onInvalidTicker={(info) => setInvalidTickerMain(info)}
           onSubmit={(newFlip) => {
             setFlips((arr) => [newFlip, ...arr]);
             setShowManualFlip(false);
+            setManualFlipDefaultCardId(null);
             pushToast({ label: `Added ${newFlip.merchant} → ${newFlip.ticker} @ $${newFlip.resolvedPrice.toFixed(2)}`, onUndo: () => setFlips((arr) => arr.filter((d) => d.id !== newFlip.id)) });
           }}
         />
