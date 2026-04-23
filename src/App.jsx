@@ -2018,7 +2018,7 @@ const StatementUpload = ({ onNext, onSkip, onBack, permissions, setPermissions, 
             fontSize: 11, fontWeight: 600, color: "var(--gold)", marginBottom: 8, letterSpacing: "0.02em",
           }}><Sparkles size={11} /> HOW AI MATCHING WORKS</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.55, color: "var(--text-2)" }}>
-            We parse each transaction and match the merchant to a ticker — Starbucks → SBUX, Netflix → NFLX. Parent-company lookup handles cases like Old Navy → GAP. Anything genuinely ambiguous goes to <b style={{ color: "var(--text-1)" }}>Unassigned</b> with 2-3 suggestions.
+            We parse each transaction and match the merchant to a ticker — Starbucks → SBUX, Netflix → NFLX. Parent-company lookup handles cases like Old Navy → GAP. Anything genuinely ambiguous goes to <span style={{ color: "var(--text-2)" }}>Unassigned</span> with 2-3 suggestions.
           </div>
         </div>
       </div>
@@ -3122,21 +3122,22 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
   const [suggested, setSuggested] = useState(null);       // merchant → ticker suggestion
   const [merchantSuggestion, setMerchantSuggestion] = useState(null); // ticker → merchant name
   const [resolving, setResolving] = useState(false);
-  const merchantRef = useRef(merchant);
-  useEffect(() => { merchantRef.current = merchant; }, [merchant]);
-  const justUsedMerchantSuggestion = useRef(false);
+  const justUsed = useRef(false);
 
-  // Merchant → ticker: hardcoded table first, then Yahoo search fallback (debounced 400ms)
+  // Merchant→Ticker: tries hardcoded lookup, then Yahoo search (debounced 400ms).
+  // Sets `suggested` — shown next to the Ticker field for user to confirm.
+  // Never auto-fills. Bails if the Use button was just clicked (justUsed guard).
   useEffect(() => {
     if (merchant.length < 3) { setSuggested(null); return; }
+    if (justUsed.current) { justUsed.current = false; return; }
     const hit = lookupMerchant(merchant);
     if (hit && hit.ticker && hit.confidence >= 0.7) {
-      setSuggested({ ticker: hit.ticker, category: hit.category, confidence: hit.confidence });
+      setSuggested({ ticker: hit.ticker, category: hit.category });
       return;
     }
     setSuggested(null);
     const key = merchant.toLowerCase();
-    if (_searchCache[key] !== undefined) { setSuggested(_searchCache[key]); return; }
+    if (_searchCache[key] !== undefined) { if (_searchCache[key]) setSuggested(_searchCache[key]); return; }
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/yahoo?endpoint=search&q=${encodeURIComponent(merchant)}`);
@@ -3144,9 +3145,9 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
           const data = await res.json();
           const found = (data?.quotes || []).find((h) => h?.symbol && (h.quoteType === "EQUITY" || h.quoteType === "ETF"));
           if (found?.symbol) {
-            const suggestion = { ticker: found.symbol, name: found.shortname || found.longname || found.symbol, fromYahoo: true };
-            _searchCache[key] = suggestion;
-            setSuggested(suggestion);
+            const s = { ticker: found.symbol, name: found.shortname || found.longname || found.symbol, fromYahoo: true };
+            _searchCache[key] = s;
+            setSuggested(s);
           } else {
             _searchCache[key] = null;
           }
@@ -3156,22 +3157,18 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
     return () => clearTimeout(timer);
   }, [merchant]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ticker → merchant name: auto-fill if merchant empty, suggest if it differs (debounced 400ms).
-  // Guard: if the user just clicked "Use" on a ticker suggestion, don't suggest back.
+  // Ticker→Merchant: calls Yahoo for company name (debounced 400ms).
+  // Sets `merchantSuggestion` — shown next to the Merchant field for user to confirm.
+  // Never auto-fills. Bails if the Use button was just clicked (justUsed guard).
   useEffect(() => {
     const tkr = ticker.trim().toUpperCase();
     if (!/^[A-Z]{2,5}$/.test(tkr)) { setMerchantSuggestion(null); return; }
-    if (justUsedMerchantSuggestion.current) { justUsedMerchantSuggestion.current = false; return; }
+    if (justUsed.current) { justUsed.current = false; return; }
     const timer = setTimeout(async () => {
       try {
         const result = await fetchYahooQuote(tkr);
         if (result?.name && result.name !== tkr) {
-          const cur = merchantRef.current.trim();
-          if (!cur) {
-            setMerchant(result.name);
-          } else if (cur.toLowerCase() !== result.name.toLowerCase()) {
-            setMerchantSuggestion(result.name);
-          }
+          setMerchantSuggestion(result.name);
         }
       } catch (_) {}
     }, 400);
@@ -3240,26 +3237,9 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
   return (
     <BottomSheet onClose={onClose} title="Add manual flip">
       <div className="soft-scroll" style={{ flex: 1, overflow: "auto", padding: "14px 22px 24px" }}>
-        <LabeledInput label="Merchant" placeholder="e.g. Starbucks, Apple, Chipotle" value={merchant} onChange={(v) => { setMerchant(v); setMerchantSuggestion(null); }} />
-        {suggested && (
-          <div style={{
-            padding: "9px 12px", borderRadius: 10, marginBottom: 12,
-            background: "var(--accent-soft)", border: "1px solid var(--accent)",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <Sparkles size={13} color="var(--accent-light)" />
-            <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
-              Ticker: <b>{suggested.ticker}</b>{suggested.category ? ` (${suggested.category})` : suggested.name ? ` — ${suggested.name}` : ""}
-            </div>
-            <button onClick={() => { justUsedMerchantSuggestion.current = true; setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
-              padding: "4px 8px", borderRadius: 7, border: "none",
-              background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
-            }}>Use</button>
-          </div>
-        )}
-        <LabeledInput label="Amount ($)" placeholder="0.00" value={amount} onChange={setAmount} />
-        <LabeledInput label="Ticker" placeholder="e.g. SBUX" value={ticker} onChange={(v) => { setTicker(v.toUpperCase()); setMerchantSuggestion(null); }} />
-        {merchantSuggestion && (
+        {/* Merchant field — merchantSuggestion banner renders HERE (next to its target) */}
+        <LabeledInput label="Merchant" placeholder="e.g. Starbucks, Apple, Chipotle" value={merchant} onChange={(v) => { setMerchant(v); setSuggested(null); setMerchantSuggestion(null); }} />
+        {merchantSuggestion && merchantSuggestion !== merchant && (
           <div style={{
             padding: "9px 12px", borderRadius: 10, marginBottom: 12,
             background: "var(--accent-soft)", border: "1px solid var(--accent)",
@@ -3269,7 +3249,26 @@ const ManualFlipModal = ({ userCards, onClose, onSubmit, onInvalidTicker, onGoTo
             <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
               Merchant: <b>{merchantSuggestion}</b>
             </div>
-            <button onClick={() => { setMerchant(merchantSuggestion); setMerchantSuggestion(null); }} style={{
+            <button onClick={() => { justUsed.current = true; setMerchant(merchantSuggestion); setMerchantSuggestion(null); }} style={{
+              padding: "4px 8px", borderRadius: 7, border: "none",
+              background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
+            }}>Use</button>
+          </div>
+        )}
+        <LabeledInput label="Amount ($)" placeholder="0.00" value={amount} onChange={setAmount} />
+        {/* Ticker field — suggested banner renders HERE (next to its target) */}
+        <LabeledInput label="Ticker" placeholder="e.g. SBUX" value={ticker} onChange={(v) => { setTicker(v.toUpperCase()); setSuggested(null); setMerchantSuggestion(null); }} />
+        {suggested && suggested.ticker !== ticker && (
+          <div style={{
+            padding: "9px 12px", borderRadius: 10, marginBottom: 12,
+            background: "var(--accent-soft)", border: "1px solid var(--accent)",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <Sparkles size={13} color="var(--accent-light)" />
+            <div style={{ flex: 1, fontSize: 11, color: "var(--text-1)" }}>
+              Ticker: <b>{suggested.ticker}</b>{suggested.category ? ` (${suggested.category})` : suggested.name ? ` — ${suggested.name}` : ""}
+            </div>
+            <button onClick={() => { justUsed.current = true; setTicker(suggested.ticker); if (suggested.category) setCategory(suggested.category); setSuggested(null); }} style={{
               padding: "4px 8px", borderRadius: 7, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 10.5, fontWeight: 500, cursor: "pointer",
             }}>Use</button>
@@ -5080,7 +5079,7 @@ export default function Stockback() {
     setToasts((arr) => arr.filter((t) => t.id !== id));
   }, []);
 
-  const [permissions, setPermissions] = useState({ notifications: false, camera: false, requested: false });
+  const [permissions, setPermissions] = useState(() => loadPersistedState()?.permissions ?? { notifications: false, camera: false, requested: false });
 
   useEffect(() => { applyTheme(themeId); }, [themeId]);
 
@@ -5187,6 +5186,7 @@ export default function Stockback() {
           connectedBrokers,
           selectedCards,
           unassigned,
+          permissions,
         }));
       } else {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -5200,10 +5200,11 @@ export default function Stockback() {
           userCards,
           flips,
           portfolio,
+          permissions,
         }));
       }
     } catch (_) { /* storage full or unavailable — ignore */ }
-  }, [isDemoMode, supabaseUser, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio]);
+  }, [isDemoMode, supabaseUser, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio, permissions]);
 
   // Debounced DB sync for signed-in users (skip until dbLoaded to avoid overwriting with empty state)
   const syncFlipsTimer = useRef(null);
