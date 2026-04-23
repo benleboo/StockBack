@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "./lib/supabase.js";
+import { loadUserData, syncFlips, syncPortfolio, syncUserCards } from "./lib/db.js";
 import {
   TrendingUp, TrendingDown, Upload, Camera, ArrowRight, ArrowLeft,
   Check, Plus, X, CreditCard, BarChart3, Home, Edit3,
@@ -4834,6 +4835,7 @@ export default function Stockback() {
   const [portfolio, setPortfolio] = useState(() => loadPersistedState()?.portfolio ?? []);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [supabaseUser, setSupabaseUser] = useState(null);
+  const dbLoaded = useRef(false); // true after loadUserData() has populated state
 
   const [openedItemId, setOpenedItemId] = useState(null);
   const [openedTicker, setOpenedTicker] = useState(null);
@@ -4855,29 +4857,32 @@ export default function Stockback() {
 
   // Supabase auth: restore existing session on mount and listen for future changes
   useEffect(() => {
+    const populateFromDb = (user, navigateIfOnWelcome) => {
+      setSupabaseUser(user);
+      setIsDemoMode(false);
+      dbLoaded.current = false;
+      loadUserData().then(({ flips: dbFlips, portfolio: dbPortfolio, userCards: dbCards }) => {
+        setFlips(dbFlips);
+        setPortfolio(dbPortfolio);
+        setUserCards(dbCards);
+        dbLoaded.current = true;
+        if (navigateIfOnWelcome) setScreen((s) => s === "welcome" ? "cards" : s);
+      });
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
-      setSupabaseUser(user);
-      if (user && screen === "welcome") {
-        setIsDemoMode(false);
-        setFlips([]);
-        setUnassigned([]);
-        setPortfolio([]);
-        setScreen("cards");
-      }
+      if (user) { populateFromDb(user, true); }
+      else { setSupabaseUser(null); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
-      setSupabaseUser(user);
       if (event === "SIGNED_IN" && user) {
-        setIsDemoMode(false);
-        setFlips([]);
-        setUnassigned([]);
-        setPortfolio([]);
-        setScreen("cards");
+        populateFromDb(user, true);
       }
       if (event === "SIGNED_OUT") {
+        dbLoaded.current = false;
         setSupabaseUser(null);
         setScreen("welcome");
       }
@@ -4898,24 +4903,52 @@ export default function Stockback() {
   }, [activeTab]);
 
   // Persist state on every relevant change (never in demo mode)
+  // When signed in, DB is source of truth for flips/portfolio/userCards — skip those here
   useEffect(() => {
     if (isDemoMode) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        isDemoMode,
+      const payload = {
         screen,
         activeTab,
         themeId,
         broker,
         connectedBrokers,
-        userCards,
         selectedCards,
-        flips,
         unassigned,
-        portfolio,
-      }));
+      };
+      if (!supabaseUser) {
+        payload.userCards = userCards;
+        payload.flips = flips;
+        payload.portfolio = portfolio;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (_) { /* storage full or unavailable — ignore */ }
-  }, [isDemoMode, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio]);
+  }, [isDemoMode, supabaseUser, screen, activeTab, themeId, broker, connectedBrokers, userCards, selectedCards, flips, unassigned, portfolio]);
+
+  // Debounced DB sync for signed-in users (skip until dbLoaded to avoid overwriting with empty state)
+  const syncFlipsTimer = useRef(null);
+  useEffect(() => {
+    if (!supabaseUser || !dbLoaded.current) return;
+    clearTimeout(syncFlipsTimer.current);
+    syncFlipsTimer.current = setTimeout(() => syncFlips(flips), 1500);
+    return () => clearTimeout(syncFlipsTimer.current);
+  }, [flips, supabaseUser]);
+
+  const syncPortfolioTimer = useRef(null);
+  useEffect(() => {
+    if (!supabaseUser || !dbLoaded.current) return;
+    clearTimeout(syncPortfolioTimer.current);
+    syncPortfolioTimer.current = setTimeout(() => syncPortfolio(portfolio), 1500);
+    return () => clearTimeout(syncPortfolioTimer.current);
+  }, [portfolio, supabaseUser]);
+
+  const syncCardsTimer = useRef(null);
+  useEffect(() => {
+    if (!supabaseUser || !dbLoaded.current) return;
+    clearTimeout(syncCardsTimer.current);
+    syncCardsTimer.current = setTimeout(() => syncUserCards(userCards), 1500);
+    return () => clearTimeout(syncCardsTimer.current);
+  }, [userCards, supabaseUser]);
 
   const cardsMap = useMemo(() => {
     const m = {};
