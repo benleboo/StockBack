@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { supabase } from "./lib/supabase.js";
 import { loadUserData, syncFlips, syncPortfolio, syncUserCards } from "./lib/db.js";
 import {
@@ -130,45 +131,6 @@ const THEMES = {
       "--gold": "#f5a623",
       "--text-1": "#ffffff", "--text-2": "#a0a6b0", "--text-3": "#6e737b", "--text-4": "#454852",
       "--green": "#00c853", "--red": "#ff3344",
-    },
-  },
-  "cashapp": {
-    label: "Cash App Investing", family: "Brokerage",
-    fontStack: "'Inter', sans-serif",
-    vars: {
-      "--bg-deep": "#000000", "--bg-0": "#000000", "--bg-1": "#0a0a0a",
-      "--bg-2": "#151515", "--surface": "#1f1f1f",
-      "--border": "rgba(0, 214, 50, 0.1)", "--border-strong": "rgba(0, 214, 50, 0.3)",
-      "--accent": "#00d632", "--accent-light": "#2ff05c", "--accent-soft": "rgba(0, 214, 50, 0.1)",
-      "--gold": "#ffd666",
-      "--text-1": "#ffffff", "--text-2": "#a0a0a0", "--text-3": "#6e6e6e", "--text-4": "#454545",
-      "--green": "#00d632", "--red": "#ff3d5a",
-    },
-  },
-  "merrill": {
-    label: "Merrill Edge", family: "Brokerage",
-    fontStack: "'Georgia', serif",
-    vars: {
-      "--bg-deep": "#f0ebe0", "--bg-0": "#fdfbf6", "--bg-1": "#f5f1e8",
-      "--bg-2": "#ebe4d4", "--surface": "#ddd3bf",
-      "--border": "rgba(109, 47, 31, 0.1)", "--border-strong": "rgba(109, 47, 31, 0.24)",
-      "--accent": "#6d2f1f", "--accent-light": "#8e3f2a", "--accent-soft": "rgba(109, 47, 31, 0.08)",
-      "--gold": "#b8860b",
-      "--text-1": "#1e1a14", "--text-2": "#4f4a3e", "--text-3": "#85816f", "--text-4": "#b8b3a0",
-      "--green": "#2d7a3d", "--red": "#b02c2c",
-    },
-  },
-  "coinbase": {
-    label: "Coinbase", family: "Brokerage",
-    fontStack: "'Inter', sans-serif",
-    vars: {
-      "--bg-deep": "#ffffff", "--bg-0": "#ffffff", "--bg-1": "#f7f8fa",
-      "--bg-2": "#eef0f3", "--surface": "#dde1e6",
-      "--border": "rgba(10, 11, 13, 0.08)", "--border-strong": "rgba(10, 11, 13, 0.2)",
-      "--accent": "#0052ff", "--accent-light": "#2b6bff", "--accent-soft": "rgba(0, 82, 255, 0.08)",
-      "--gold": "#f9a138",
-      "--text-1": "#0a0b0d", "--text-2": "#444a55", "--text-3": "#7c8493", "--text-4": "#b3b9c2",
-      "--green": "#05b169", "--red": "#cf202f",
     },
   },
   "capitalone": {
@@ -669,11 +631,8 @@ const BROKER_PRESETS = [
   { id: "sofi", name: "SoFi Invest", connectable: false, url: (t) => `https://www.sofi.com/invest/stocks/${t}/` },
   { id: "public", name: "Public", connectable: true, url: (t) => `https://public.com/stocks/${t}` },
   { id: "webull", name: "Webull", connectable: true, url: (t) => `https://www.webull.com/quote/nasdaq-${t.toLowerCase()}` },
-  { id: "cashapp", name: "Cash App Investing", connectable: true, url: (t) => `https://cash.app/investing/stocks/${t}` },
-  { id: "merrill", name: "Merrill Edge", connectable: false, url: (t) => `https://www.ml.com/research/quote.html?symbol=${t}` },
   { id: "etrade", name: "E*TRADE", connectable: true, url: (t) => `https://us.etrade.com/etx/mkt/quotes?symbol=${t}` },
   { id: "tastytrade", name: "tastytrade", connectable: true, url: (t) => `https://trade.tastytrade.com/index.html#/quote/${t}` },
-  { id: "coinbase", name: "Coinbase", connectable: true, url: (t) => `https://www.coinbase.com/price/${t.toLowerCase()}` },
 ];
 
 // Broker visual identities: primary color + 1-2 letter monogram
@@ -687,11 +646,8 @@ const BROKER_BRAND = {
   sofi:       { color: "#0046d1", mono: "SF",  textColor: "#fff" },
   public:     { color: "#000000", mono: "P",   textColor: "#fff" },
   webull:     { color: "#0043e9", mono: "W",   textColor: "#fff" },
-  cashapp:    { color: "#00d632", mono: "$",   textColor: "#000" },
-  merrill:    { color: "#6d2f1f", mono: "ME",  textColor: "#fff" },
   etrade:     { color: "#6633cc", mono: "E*",  textColor: "#fff" },
   tastytrade: { color: "#ff6b00", mono: "tt",  textColor: "#fff" },
-  coinbase:   { color: "#0052ff", mono: "CB",  textColor: "#fff" },
 };
 
 const BrokerLogo = ({ brokerId, size = 36 }) => {
@@ -1276,6 +1232,21 @@ const Welcome = ({ onContinue, onSignIn, onDemoMode }) => {
             Pre-filled with sample data
           </div>
         </div>
+
+        <div style={{ marginTop: 18, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", gap: 5 }}>
+            {Object.values(THEMES).map((t, i) => (
+              <div key={i} style={{
+                width: 7, height: 7, borderRadius: 999,
+                background: t.vars["--accent"],
+                opacity: 0.7,
+              }} />
+            ))}
+          </div>
+          <div style={{ fontSize: 9.5, color: "var(--text-4)" }}>
+            {Object.keys(THEMES).length} themes · customize in settings
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1394,7 +1365,7 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-      <StepHeader step={1} total={2} title="Which cards do you use?"
+      <StepHeader step={1} total={1} title="Which cards do you use?"
         subtitle={`Tap a popular card or search ${CARD_CATALOG.length}+ options. You can edit rewards anytime.`}
         onBack={onBack} onSkip={onSkip} skipLabel="Skip & browse" />
       <div className="soft-scroll" style={{ flex: 1, padding: "6px 22px 20px", overflowY: "auto", minHeight: 0 }}>
@@ -2067,6 +2038,27 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
   const allSelected = active.length > 0 && selectedCount === active.length;
   const [placing, setPlacing] = useState(false);
   const [invalidTicker, setInvalidTicker] = useState(null); // { query, reason } when resolution fails
+  const [countUpAmt, setCountUpAmt] = useState(null); // non-null during count-up animation
+  const ctaRef = useRef(null); // ref on the flip CTA button for confetti origin
+
+  // Streak: count consecutive months ending with current month that have ≥1 statement
+  const uploadStreak = useMemo(() => {
+    if (!statements || statements.length === 0) return 0;
+    const now = new Date();
+    let streak = 0;
+    let yr = now.getFullYear();
+    let mo = now.getMonth() + 1; // 1-based
+    while (true) {
+      const key = `${yr}-${String(mo).padStart(2, "0")}`;
+      const hasStmt = statements.some((s) => s.id.startsWith(`stmt-${key}`));
+      if (!hasStmt) break;
+      streak++;
+      mo--;
+      if (mo === 0) { mo = 12; yr--; }
+      if (streak > 24) break; // safety cap
+    }
+    return streak;
+  }, [statements]);
 
   const selectAll = () => setFlips((arr) => arr.map((d) => (!d.done && active.find((a) => a.id === d.id)) ? { ...d, flipped: true } : d));
   const deselectAll = () => setFlips((arr) => arr.map((d) => (!d.done) ? { ...d, flipped: false } : d));
@@ -2108,10 +2100,49 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
       setPortfolio(nextPortfolio);
       setFlips((arr) => arr.map((d) => d.flipped && !d.done ? { ...d, done: true } : d));
       const total = selected.reduce((a, b) => a + cashbackFor(b, cardsMap), 0);
+
+      // Count-up animation on hero number: 0 → total over 800ms easeOut
+      setCountUpAmt(0);
+      const startTime = performance.now();
+      const duration = 800;
+      const tick = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // cubic easeOut
+        setCountUpAmt(total * ease);
+        if (progress < 1) requestAnimationFrame(tick);
+        else setTimeout(() => setCountUpAmt(null), 400); // fade back after brief pause
+      };
+      requestAnimationFrame(tick);
+
+      // Confetti burst from CTA button location
+      if (ctaRef.current) {
+        const rect = ctaRef.current.getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = rect.top / window.innerHeight;
+        confetti({
+          particleCount: 65,
+          spread: 55,
+          startVelocity: 38,
+          origin: { x, y },
+          colors: ["#00c805", "#2ee089", "#00e617", "#ffffff", "#b3ffb3"],
+          gravity: 0.9,
+          scalar: 0.85,
+        });
+      }
+
+      // Build toast label: "Flipped $X.XX → Y shares of TICKER" for single-ticker flips
+      let toastLabel;
+      if (selected.length === 1) {
+        const d = selected[0];
+        const priceNow = nextPortfolio.find((h) => h.ticker === d.ticker)?.currentPrice || d.resolvedPrice || 1;
+        const shares = (cashbackFor(d, cardsMap) / priceNow).toFixed(4);
+        toastLabel = `Flipped $${total.toFixed(2)} → ${shares} shares of ${d.ticker}`;
+      } else {
+        toastLabel = `Flipped $${total.toFixed(2)} across ${selected.length} tickers`;
+      }
       onShowToast({
-        label: activeBrokerConnected
-          ? `Placed $${total.toFixed(2)} at ${activeBrokerName}`
-          : `Invested $${total.toFixed(2)} across ${selected.length} ticker${selected.length !== 1 ? "s" : ""}`,
+        label: toastLabel,
         onUndo: () => { setFlips(flipsSnap); setPortfolio(portfolioSnap); },
       });
     };
@@ -2180,14 +2211,24 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           }}>
             {selectedCount > 0 ? <><Zap size={10} strokeWidth={2.8} /> Ready to flip</> : <><Repeat size={10} strokeWidth={2.2} /> Available</>}
           </div>
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "flex-end",
-          }}>
-            <div className="sb-num" style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>
-              ${totalFlippedThisCycle.toFixed(2)}
-            </div>
-            <div style={{ fontSize: 9.5, color: "var(--text-3)", letterSpacing: "0.03em" }}>
-              already flipped
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {uploadStreak >= 2 && (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "4px 8px", borderRadius: 999,
+                background: "rgba(255, 160, 0, 0.12)", border: "1px solid rgba(255, 160, 0, 0.3)",
+                fontSize: 10, fontWeight: 700, color: "var(--gold)",
+              }}>
+                🔥 {uploadStreak}-month streak
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <div className="sb-num" style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>
+                ${totalFlippedThisCycle.toFixed(2)}
+              </div>
+              <div style={{ fontSize: 9.5, color: "var(--text-3)", letterSpacing: "0.03em" }}>
+                already flipped
+              </div>
             </div>
           </div>
         </div>
@@ -2205,10 +2246,10 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           <span className="sb-num" style={{
             fontSize: 52, lineHeight: 0.95,
             fontWeight: 700, letterSpacing: "-0.03em",
-            color: selectedCount > 0 ? "#00c805" : "var(--text-1)",
+            color: countUpAmt !== null ? "#00c805" : selectedCount > 0 ? "#00c805" : "var(--text-1)",
             transition: "color 0.3s",
           }}>
-            {selectedCount > 0 ? selectedFlipAmt.toFixed(2) : remaining.toFixed(2)}
+            {countUpAmt !== null ? countUpAmt.toFixed(2) : selectedCount > 0 ? selectedFlipAmt.toFixed(2) : remaining.toFixed(2)}
           </span>
         </div>
 
@@ -2345,7 +2386,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
 
       {selectedCount > 0 && (
         <div className="pop" style={{ margin: "4px 20px 18px" }}>
-          <button onClick={finalize} className="cta-pulse" style={{
+          <button ref={ctaRef} onClick={finalize} className="cta-pulse" style={{
             width: "100%", padding: "18px 20px", borderRadius: 18,
             background: "linear-gradient(135deg, #00c805 0%, #00e617 100%)",
             border: "none", cursor: "pointer", color: "#fff",
@@ -5222,11 +5263,18 @@ const ToastItem = ({ toast, onDismiss }) => {
 
 // ==================== MAIN APP ====================
 export default function Stockback() {
-  const [screen, setScreen] = useState(() => loadPersistedState()?.screen ?? "welcome"); // welcome | cards | upload | app
+  const [screen, setScreen] = useState(() => {
+    const s = loadPersistedState()?.screen ?? "welcome";
+    // "upload" and "permissions" no longer exist — redirect to app
+    return (s === "upload" || s === "permissions") ? "app" : s;
+  }); // welcome | cards | app
   const [activeTab, setActiveTab] = useState(() => loadPersistedState()?.activeTab ?? "home"); // home | portfolio | statements | cards | settings
   const [lastNonSettingsTab, setLastNonSettingsTab] = useState("home");
 
-  const [themeId, setThemeId] = useState(() => loadPersistedState()?.themeId ?? "stockback-dark");
+  const [themeId, setThemeId] = useState(() => {
+    const saved = loadPersistedState()?.themeId ?? "stockback-dark";
+    return saved in THEMES ? saved : "stockback-dark";
+  });
   const [broker, setBroker] = useState(() => loadPersistedState()?.broker ?? "yahoo");
   const [connectedBrokers, setConnectedBrokers] = useState(() => loadPersistedState()?.connectedBrokers ?? {});
 
@@ -5267,21 +5315,12 @@ export default function Stockback() {
 
   useEffect(() => { applyTheme(themeId); }, [themeId]);
 
-  // Cycle through all themes while the welcome screen is active; restore on exit
+  // Force stockback-dark on welcome; restore previous theme when leaving
   useEffect(() => {
     if (screen !== "welcome") return;
-    document.documentElement.classList.add("theme-cycling");
     themeBeforeWelcome.current = themeId;
     setThemeId("stockback-dark");
-    const themeKeys = Object.keys(THEMES);
-    let idx = 0; // start at stockback-dark (index 0)
-    const id = setInterval(() => {
-      idx = (idx + 1) % themeKeys.length;
-      setThemeId(themeKeys[idx]);
-    }, 5000);
     return () => {
-      document.documentElement.classList.remove("theme-cycling");
-      clearInterval(id);
       if (themeBeforeWelcome.current !== null) {
         setThemeId(themeBeforeWelcome.current);
         themeBeforeWelcome.current = null;
@@ -5310,7 +5349,7 @@ export default function Stockback() {
         // Never interrupt an in-progress onboarding flow (bug 2).
         // Only reroute when coming from welcome or when forced onboarding (bug 1).
         setScreen((s) => {
-          const onboarding = ["cards", "upload", "permissions"];
+          const onboarding = ["cards"];
           if (onboarding.includes(s)) return s;     // mid-onboarding: don't touch
           if (dbCards.length === 0) return "cards"; // no cards ever: must onboard
           if (s === "welcome") return "app";        // was on welcome: enter app
@@ -5616,7 +5655,7 @@ export default function Stockback() {
             }}
             onSkip={() => {
               returnToFlipAfterCards.current = false;
-              setScreen("upload");
+              setScreen("app"); setActiveTab("home");
             }}
             onNext={() => {
               if (returnToFlipAfterCards.current) {
@@ -5626,28 +5665,9 @@ export default function Stockback() {
                 setScreen("app");
                 setShowManualFlip(true);
               } else {
-                setScreen("upload");
+                setScreen("app"); setActiveTab("home");
               }
             }}
-          />
-        </Shell>
-        <ToastStack toasts={toasts} onDismiss={dismissToast} />
-      </>
-    );
-  }
-
-  // === Upload ===
-  if (screen === "upload") {
-    return (
-      <>
-        <FontLoader />
-        <Shell showTicker={false} showNav={false}>
-          <StatementUpload
-            permissions={permissions} setPermissions={setPermissions}
-            isDemoMode={isDemoMode}
-            onBack={() => setScreen("cards")}
-            onSkip={() => { setScreen("app"); setActiveTab("home"); }}
-            onNext={() => { setScreen("app"); setActiveTab("home"); }}
           />
         </Shell>
         <ToastStack toasts={toasts} onDismiss={dismissToast} />
