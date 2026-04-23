@@ -206,6 +206,9 @@ const FontLoader = () => (
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg-0, #05080d); transition: background 0.3s; }
 
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .ticker-track { animation: ticker-scroll 38s linear infinite; }
+
     /* Smooth cross-fade when cycling themes on the welcome screen */
     html.theme-cycling .sb-root,
     html.theme-cycling .sb-root * {
@@ -220,6 +223,7 @@ const FontLoader = () => (
     }
     .sb-display { font-family: 'Fraunces', serif; letter-spacing: -0.015em; font-weight: 500; font-variation-settings: "opsz" 80; }
     .sb-mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; letter-spacing: -0.02em; }
+    .sb-num { font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
     .sb-brand { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; font-weight: 700; }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1028,8 +1032,8 @@ const StockbackLogo = ({ size = 40, color }) => {
 
 // ==================== TICKER BANNER ====================
 const TickerBanner = ({ items }) => {
-  if (!items.length) return null;
-  const content = items;
+  if (!items || !items.length) return null;
+  const content = [...items, ...items]; // doubled for seamless scroll loop
   const NYSE_MUTED = "#888888", NYSE_YELLOW = "#ffd740";
   return (
     <div style={{
@@ -1047,7 +1051,7 @@ const TickerBanner = ({ items }) => {
         <span className="pulse-dot" style={{ width: 5, height: 5, borderRadius: 999, background: NYSE_YELLOW }} />
         NYSE
       </div>
-      <div style={{
+      <div className="ticker-track" style={{
         display: "flex", gap: 28, whiteSpace: "nowrap",
         marginTop: 14, width: "max-content",
       }}>
@@ -1055,12 +1059,14 @@ const TickerBanner = ({ items }) => {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5,
             fontFamily: "'JetBrains Mono', monospace" }}>
             <span style={{ color: "#ffffff", fontWeight: 700 }}>{it.ticker}</span>
-            <span style={{ color: "#c4c4c4", fontSize: 11 }}>${it.amount.toFixed(2)}</span>
-            <span style={{
-              color: NYSE_MUTED, fontSize: 10.5, fontWeight: 600,
-            }}>
-              {it.change >= 0 ? "▲" : "▼"} {Math.abs(it.change).toFixed(2)}%
-            </span>
+            {Number.isFinite(it.amount) && it.amount > 0 && (
+              <span style={{ color: "#c4c4c4", fontSize: 11 }}>${it.amount.toFixed(2)}</span>
+            )}
+            {Number.isFinite(it.change) && (
+              <span style={{ color: NYSE_MUTED, fontSize: 10.5, fontWeight: 600 }}>
+                {it.change >= 0 ? "▲" : "▼"} {Math.abs(it.change).toFixed(2)}%
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -2166,7 +2172,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           <div style={{
             display: "flex", flexDirection: "column", alignItems: "flex-end",
           }}>
-            <div className="sb-mono" style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>
+            <div className="sb-num" style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>
               ${totalFlippedThisCycle.toFixed(2)}
             </div>
             <div style={{ fontSize: 9.5, color: "var(--text-3)", letterSpacing: "0.03em" }}>
@@ -2185,7 +2191,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
             fontSize: 22, fontWeight: 600, color: "var(--text-3)",
             letterSpacing: "-0.02em", lineHeight: 1,
           }}>$</span>
-          <span className="sb-mono" style={{
+          <span className="sb-num" style={{
             fontSize: 52, lineHeight: 0.95,
             fontWeight: 700, letterSpacing: "-0.03em",
             color: selectedCount > 0 ? "#00c805" : "var(--text-1)",
@@ -2200,11 +2206,11 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
           {selectedCount > 0 ? (
             <>
               <span style={{ color: "#00c805", fontWeight: 700 }}>{selectedCount} selected</span>
-              {" · "}<span className="sb-mono">${remaining.toFixed(2)}</span> still available
+              {" · "}<span className="sb-num">${remaining.toFixed(2)}</span> still available
             </>
           ) : (
             <>
-              <span className="sb-mono">{active.filter((d) => !d.flipped).length}</span>
+              <span className="sb-num">{active.filter((d) => !d.flipped).length}</span>
               {` ticker${active.filter((d) => !d.flipped).length !== 1 ? "s" : ""} waiting`}
               {unassigned.length > 0 && (
                 <>
@@ -2221,8 +2227,8 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
             display: "flex", justifyContent: "space-between", marginTop: 8,
             fontSize: 10.5, color: "var(--text-3)",
           }}>
-            <span className="sb-mono" style={{ color: "#00c805", fontWeight: 600 }}>${selectedFlipAmt.toFixed(2)} selected</span>
-            <span className="sb-mono">${totalCashback.toFixed(2)} total</span>
+            <span className="sb-num" style={{ color: "#00c805", fontWeight: 600 }}>${selectedFlipAmt.toFixed(2)} selected</span>
+            <span className="sb-num">${totalCashback.toFixed(2)} total</span>
           </div>
         </div>
 
@@ -2330,7 +2336,7 @@ const FlipTab = ({ flips, setFlips, unassigned, setUnassigned, cardsMap, onOpenI
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", lineHeight: 1.3 }}>
                 {activeBrokerConnected
                   ? `Auto-sync to ${activeBrokerName}`
-                  : `Tap after placing in ${activeBrokerName}`}
+                  : `Tap after placing in ${activeBroker?.connectable ? activeBrokerName : "your broker"}`}
               </div>
             </div>
             <ArrowRight size={20} color="#fff" strokeWidth={2.5} />
@@ -2409,16 +2415,8 @@ const UnassignedSection = ({ items, cardsMap, onResolve, onIgnore, onDelete }) =
           color: "var(--text-3)",
         }}>?</div>
         <div style={{ flex: 1, textAlign: "left" }}>
-          <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 700, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: 6 }}>
-            {items.length} unassigned
-            <span style={{
-              fontSize: 9.5, fontWeight: 800, padding: "2px 7px", borderRadius: 999,
-              background: "var(--gold)", color: "#1a1a1a",
-              letterSpacing: "0.04em", textTransform: "uppercase",
-            }}>Needs you</span>
-          </div>
-          <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 3, lineHeight: 1.4 }}>
-            AI wasn't sure which ticker these map to. Tap a suggestion to resolve.
+          <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 700, letterSpacing: "-0.01em" }}>
+            Unassigned · {items.length}
           </div>
         </div>
         {expanded ? <ChevronUp size={16} color="var(--gold)" /> : <ChevronDown size={16} color="var(--gold)" />}
@@ -2465,7 +2463,7 @@ const UnassignedRow = ({ item, card, onAssign, onIgnore, onDelete }) => {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 600, marginBottom: 3,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.merchant}</div>
-          <div className="sb-mono" style={{ fontSize: 11, color: "var(--text-3)" }}>
+          <div className="sb-num" style={{ fontSize: 11, color: "var(--text-3)" }}>
             {item.date} · ${item.amount.toFixed(2)} · {card?.shortName || "—"}
           </div>
         </div>
@@ -3867,7 +3865,7 @@ const StatementsTab = ({ statements, cardsMap, userCards, flips, setFlips, unass
               }}><FileText size={16} color="var(--accent-light)" /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: "var(--text-1)", fontWeight: 600 }}>{s.month}</div>
-                <div className="sb-mono" style={{ fontSize: 10.5, color: "var(--text-3)" }}>
+                <div className="sb-num" style={{ fontSize: 10.5, color: "var(--text-3)" }}>
                   {cardsMap[s.cardId]?.shortName || "—"} · {s.purchaseCount} charge{s.purchaseCount !== 1 ? "s" : ""} · {s.uploadedAt}
                 </div>
               </div>
@@ -4803,7 +4801,7 @@ const FeedbackScreen = ({ onBack, onSent }) => {
           {sending ? <><Loader size={14} style={{ animation: "spin 0.9s linear infinite" }} /> Sending…</> : <><Mail size={13} /> Send</>}
         </button>
         <div style={{ fontSize: 10, color: "var(--text-4)", marginTop: 8, textAlign: "center" }}>
-          Sent to feedback@stockback.app <DemoPill tooltip="Simulated here" />
+          Sent to feedback@stockback.app
         </div>
       </div>
     </div>
