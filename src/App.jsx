@@ -1404,8 +1404,8 @@ const CardPicker = ({ onNext, onSkip, onBack, selected, setSelected, userCards, 
         subtitle={`Tap a popular card or search ${CARD_CATALOG.length}+ options. You can edit rewards anytime.`}
         onBack={onBack} onSkip={onSkip} skipLabel="Skip & browse" />
       <div className="soft-scroll" style={{ flex: 1, padding: "6px 22px 20px", overflowY: "auto", minHeight: 0 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-3)", marginBottom: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          POPULAR
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-3)", marginBottom: 10, letterSpacing: "0.04em" }}>
+          Popular
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {popularCards.map((c) => {
@@ -1741,7 +1741,7 @@ const AddCardModal = ({ onClose, onAdd, existing, onOpenCustom }) => {
                 <div style={{ width: 38, height: 26, borderRadius: 5, background: c.brandStyle.bg, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, color: "var(--text-1)", fontWeight: 500 }}>{c.shortName}</div>
-                  <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{c.issuer}{c.popular ? " · POPULAR" : ""}</div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{c.issuer}{c.popular ? " · Popular" : ""}</div>
                 </div>
                 <ChevronRight size={14} color="var(--text-4)" />
               </button>
@@ -2400,21 +2400,13 @@ const UnassignedSection = ({ items, cardsMap, onResolve, onIgnore, onDelete }) =
         position: "relative", overflow: "hidden",
       }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 11,
-          background: "linear-gradient(135deg, var(--gold) 0%, #b8925a 100%)",
+          width: 32, height: 32, borderRadius: 8,
+          border: "1.5px dashed var(--text-4)",
           display: "flex", alignItems: "center", justifyContent: "center",
           flexShrink: 0,
-          boxShadow: "0 4px 12px rgba(217, 179, 104, 0.4)",
-          position: "relative",
-        }}>
-          <Sparkles size={17} color="#1a1a1a" strokeWidth={2.5} />
-          <div className="pulse-dot" style={{
-            position: "absolute", top: -3, right: -3,
-            width: 12, height: 12, borderRadius: 999,
-            background: "var(--gold)",
-            border: "2px solid var(--bg-0)",
-          }} />
-        </div>
+          fontSize: 15, fontWeight: 700, lineHeight: 1,
+          color: "var(--text-3)",
+        }}>?</div>
         <div style={{ flex: 1, textAlign: "left" }}>
           <div style={{ fontSize: 13.5, color: "var(--text-1)", fontWeight: 700, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: 6 }}>
             {items.length} unassigned
@@ -4867,6 +4859,11 @@ export default function Stockback() {
       setSupabaseUser(user);
       setIsDemoMode(false);
       dbLoaded.current = false;
+      // Immediately clear stale/demo data so no previous session bleeds through
+      // while the DB load is in-flight. Sync effects are blocked by dbLoaded=false.
+      setFlips([]);
+      setPortfolio([]);
+      setUserCards([]);
       loadUserData().then(({ flips: dbFlips, portfolio: dbPortfolio, userCards: dbCards }) => {
         setFlips(dbFlips);
         setPortfolio(dbPortfolio);
@@ -5060,6 +5057,8 @@ export default function Stockback() {
     setUserCards([]); setSelectedCards([]); setFlips([]); setUnassigned([]); setPortfolio([]);
     setConnectedBrokers({}); setIsDemoMode(false); setOpenedItemId(null); setOpenedTicker(null);
     setPermissions({ notifications: false, camera: false, requested: false });
+    setThemeId("stockback-dark");
+    localStorage.removeItem(STORAGE_KEY);
     setScreen("welcome"); setActiveTab("home");
     setTimeout(() => pushToast({
       label: "Account deleted",
